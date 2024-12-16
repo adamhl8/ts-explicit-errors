@@ -1,0 +1,58 @@
+{
+  "name": "ts-error-tuple",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "A concise and type-safe error handling library for TypeScript that mimics Golang's simple and explicit error handling.",
+  "author": {
+    "email": "adamhl@pm.me",
+    "name": "Adam Langbert",
+    "url": "https://github.com/adamhl8"
+  },
+  "homepage": "https://github.com/adamhl8/ts-error-tuple",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adamhl8/ts-error-tuple"
+  },
+  "bugs": {
+    "url": "https://github.com/adamhl8/ts-error-tuple/issues"
+  },
+  "license": "MIT",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "keywords": [
+    "error",
+    "tuple",
+    "typescript",
+    "golang",
+    "error handling",
+    "result"
+  ],
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "bundle": "bun build.ts",
+    "lint": "tsc --noEmit && biome check --write . && eslint ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@eslint/js": "^9.17.0",
+    "@types/bun": "^1.1.14",
+    "@types/eslint__js": "^8.42.3",
+    "bun-plugin-isolated-decl": "^0.1.6",
+    "eslint": "^9.17.0",
+    "eslint-config-biome": "^1.9.4",
+    "globals": "^15.13.0",
+    "is-glob": "^4.0.3",
+    "oxc-transform": "^0.41.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "unplugin-isolated-decl": "^0.10.2"
+  },
+  "trustedDependencies": [
+    "@biomejs/biome"
+  ]
+}
