@@ -1,7 +1,7 @@
 {
   "name": "ts-error-tuple",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A concise and type-safe error handling library for TypeScript that mimics Golang's simple and explicit error handling.",
   "author": {
     "email": "adamhl@pm.me",
@@ -33,7 +33,7 @@
     "dist/"
   ],
   "scripts": {
-    "bundle": "bun build.ts",
+    "bundle": "rm -rf dist && bun build.ts",
     "lint": "tsc --noEmit && biome check --write . && eslint ."
   },
   "dependencies": {},

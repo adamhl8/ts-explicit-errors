@@ -5,13 +5,15 @@
 
 A concise and type-safe error handling library for TypeScript that mimics Golang's simple and explicit error handling.
 
-This allows you to treat errors as values and write more safe, readable, and maintainable code.
+This allows you to treat errors as values so you can write more safe, readable, and maintainable code.
 
 - [Installation](#installation)
 - [Usage](#usage)
-  - [A More Complete Example](#a-more-complete-example)
-  - [Async Functions](#async-functions)
-  - [More on `fmtError`](#more-on-fmterror)
+- [API](#api)
+  - [`Result` Type](#result-type)
+  - [`attempt` Function](#attempt-function)
+  - [`fmtError` Function](#fmterror-function)
+  - [`Err` Type](#err-type)
 
 ## Installation
 
@@ -22,31 +24,126 @@ bun add ts-error-tuple
 
 ## Usage
 
-`ts-error-tuple` exports two functions: `attempt` and `fmtError`.
+This pattern should look familiar if you've used Golang:
 
 ```typescript
-import { attempt, fmtError } from "ts-error-tuple"
+import { attempt, fmtError, type Result } from "ts-error-tuple"
 
-const [file, err] = attempt(() => fs.readFileSync("non-existent.txt"))
+function getContent(): Result<string> {
+  const [contentFile, err] = attempt(() => {
+    const data = fs.readFileSync("content.txt")
+    return data.toString()
+  })
 
+  if (err) {
+    return [undefined, fmtError("failed to read content.txt", err)]
+  }
+
+  return [contentFile, undefined]
+}
+
+const [content, err] = getContent()
 if (err) {
-  const error = fmtError("failed to read file", err)
+  const error = fmtError("failed to get content", err)
   console.error(error.message)
-  // failed to read file -> ENOENT: no such file or directory, open 'non-existent.txt'
 } else {
-  console.log("File contents:", file.toString())
+  console.log("Content:", content)
 }
 ```
 
-- `attempt` executes a function, catches any errors thrown, and returns a `Result`, which is a tuple of the value or the error
-  - If the value is present, the error is `null`
-  - Conversely, if the error is present, the value is `null`
-  - **It is generally used for functions that _you don't control_ which might throw an error**
-- `fmtError` takes a message and optionally a cause, and returns a new `Error` with a nicely formatted message
-  - All nested errors (i.e. errors attached as `cause`) are unwrapped and included in the final error message
-  - This is intended to be used like Golang's `fmt.Errorf`
+Just like is common in Golang, errors are propagated up the call stack until they are handled.
 
-In the case where there is no return value but the function might fail, you can simply ignore the first element of the `Result` tuple.
+If applied correctly and consistently, all errors throughout your codebase are checked and handled immediately.
+
+## API
+
+In an effort to keep the API concise, `ts-error-tuple` only exports four things:
+
+- `Result` Type
+- `attempt` Function
+- `fmtError` Function
+- `Err` Type
+
+---
+
+### `Result` Type
+
+```ts
+type Result<T> = [T, undefined] | [undefined, Error]
+```
+
+`Result` represents a tuple that contains a value or an error.
+
+- If the value is present, the error is `undefined`
+- Conversely, if the error is present, the value is `undefined`
+
+The main idea is that **when you would normally write a function that returns `T`, you should instead return `Result<T>`.**
+
+```ts
+function divide(a: number, b: number): number {
+  if (b === 0) {
+    throw new Error("division by zero")
+  }
+  return a / b
+}
+
+try {
+  const result = divide(10, 0)
+  console.log(result)
+} catch (err) {
+  console.error("failed to divide", err)
+}
+```
+
+Instead, use `Result`:
+
+```ts
+function divide(a: number, b: number): Result<number> {
+  if (b === 0) {
+    return [undefined, fmtError("division by zero")]
+  }
+  return [a / b, undefined]
+}
+
+const [result, err] = divide(10, 0)
+if (err) {
+  console.error(fmtError("failed to divide", err))
+} else {
+  console.log(result)
+}
+```
+
+---
+
+### `attempt` Function
+
+`attempt` executes a function, _catches any errors thrown_, and returns a `Result`.
+
+**It is generally used for functions that _you don't control_ which might throw an error**.
+
+- Use `attempt` to "force" functions to return a `Result` so error handling remains consistent
+- Another way to think about this is that `attempt` should be used as far down the call stack as possible so that thrown errors are handled at their source
+
+```ts
+// in some function that returns a Result
+const [file, err] = attempt(() => fs.readFileSync("non-existent.json"))
+if (err) {
+  return [undefined, fmtError("failed to read file", err)]
+}
+// do something with `file`
+```
+
+The function can be either synchronous or asynchronous.
+
+- If the function is async / returns a Promise, the returned `Result` will be a `Promise` and should be `await`ed
+- Otherwise, it will return `Result` directly
+
+```ts
+// fs.readFile returns a Promise
+const [file, err] = await attempt(() => fs.readFile("file.txt"))
+```
+
+In the case where a function doesn't return anything but might fail, you can simply ignore the first element of the `Result`.
 
 ```ts
 const [, err] = attempt(() => fs.rmSync("non-existent.txt"))
@@ -57,94 +154,74 @@ if (err) {
 
 ---
 
-### A More Complete Example
+### `fmtError` Function
 
-`ts-error-tuple` also exports the `Result` type: An array (tuple) of the value and the error.
-
-- When you would normally write a function that returns `T`, you should instead return `Result<T>`.
-  ```typescript
-  type Result<T> = [T, null] | [null, Error]
-  ```
-
-Of course, functions that you don't control might still throw an error. **This is what `attempt` is for.**
-
-- Use `attempt` to "force" functions to return a `Result` so error handling remains consistent
-- Another way to think about this is that `attempt` should be used as far down the call stack as possible so that thrown errors are handled at their source
-
-This pattern should look familiar if you've used Golang:
-
-```typescript
-import { attempt, fmtError, type Result } from "ts-error-tuple"
-
-function getConfig(): Result<string> {
-  const [configFile, err] = attempt(() => {
-    const data = fs.readFileSync("config.txt")
-    return data.toString()
-  })
-
-  if (err) {
-    return [null, fmtError("failed to read config.txt", err)]
-  }
-
-  return [configFile, null]
-}
-
-const [config, err] = getConfig()
-if (err) {
-  console.error(fmtError("failed to get config", err))
-} else {
-  console.log("Config:", config)
-}
-```
-
-Just like is common in Golang, errors are propagated up the call stack until they are handled.
-
-If applied correctly and consistently, all errors throughout your codebase are checked and handled immediately.
-
----
-
-### Async Functions
-
-`attempt` can also take async functions. Simply await the call to `attempt`.
-
-```typescript
-// fs.readFile returns a Promise
-const [file, err] = await attempt(() => fs.readFile("file.txt"))
-// The rest of the code is exactly the same as the sync example
-```
-
----
-
-### More on `fmtError`
-
-Creates a new `Error` with a formatted message that includes all nested error causes.
-
-```typescript
+```ts
 function fmtError(message: string, cause?: unknown): Error
 ```
 
-The error message is formatted as: `message -> cause1 -> cause2 -> ... -> causeN`
+`fmtError` takes a message and a cause (optional), and returns a new `Error` with a nicely formatted message.
 
-```typescript
-const [file, err] = attempt(() => fs.readFileSync("non-existent.txt"))
+- All nested errors (i.e. errors attached as `cause`) are unwrapped and included in the final error message
+- The error message is formatted as: `message -> cause1 -> cause2 -> ... -> causeN`
+
+```ts
+function doTheFirstThing(): Result<string> {
+  // throws an error with the message "something went wrong"
+}
+
+function doTheSecondThing(): Result<string> {
+  const [data, err] = doTheFirstThing()
+  if (err) {
+    return [undefined, fmtError("failed to do the first thing", err)]
+  }
+  // do something with `data`...
+  return [data, undefined]
+}
+
+const [data, err] = doTheSecondThing()
 if (err) {
-  const secondError = fmtError("failed to read file", err)
-  const finalError = fmtError("config initialization failed", secondError)
-  console.error(finalError.message)
-  // config initialization failed -> failed to read file -> ENOENT: no such file or directory, open 'non-existent.txt'
+  const error = fmtError("failed to do the second thing", err)
+  console.error(error.message)
+  // failed to do the second thing -> failed to do the first thing -> something went wrong
 }
 ```
 
-Sometimes there is no cause or you are creating your own error:
+As stated above, the `cause` is optional, because sometimes you need create your own error.
 
 ```ts
-const [file, err] = attempt(() => fs.readFileSync("file.txt"))
+const [data, err] = getData()
 if (err) {
   // handle error
 }
-if (file.length < 10) {
-  const error = fmtError("file is too short")
-  console.error(error.message)
-  // file is too short
+if (data.length < 10) {
+  const error = fmtError("data is too short")
+  return [undefined, error]
+}
+```
+
+---
+
+### `Err` Type
+
+```ts
+type Err = Error | undefined
+```
+
+`Err` is a type alias for `Error | undefined` to make function return types more readable.
+
+- This is used for functions that don't return a value but may return an error.
+
+```ts
+function validateData(data: string): Err {
+  if (data.length < 10) {
+    return fmtError("data is too short")
+  }
+  // implicit return undefined
+}
+
+const err = validateData("short")
+if (err) {
+  console.error(fmtError("failed to validate data", err))
 }
 ```

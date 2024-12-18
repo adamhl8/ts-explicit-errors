@@ -5,7 +5,7 @@ describe("attempt", () => {
   test("handles successful synchronous operations", () => {
     const [value, error] = attempt(() => "success")
     expect(value).toBe("success")
-    expect(error).toBeNull()
+    expect(error).toBeUndefined()
   })
 
   test("handles failed synchronous operations", () => {
@@ -15,7 +15,7 @@ describe("attempt", () => {
       }
       throws()
     })
-    expect(value).toBeNull()
+    expect(value).toBeUndefined()
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe("sync error")
   })
@@ -23,14 +23,14 @@ describe("attempt", () => {
   test("handles successful async operations", async () => {
     const [value, error] = await attempt(async () => "async success")
     expect(value).toBe("async success")
-    expect(error).toBeNull()
+    expect(error).toBeUndefined()
   })
 
   test("handles failed async operations", async () => {
     const [value, error] = await attempt(async () => {
       throw new Error("async error")
     })
-    expect(value).toBeNull()
+    expect(value).toBeUndefined()
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe("async error")
   })
@@ -42,7 +42,7 @@ describe("attempt", () => {
       }
       throws()
     })
-    expect(value).toBeNull()
+    expect(value).toBeUndefined()
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe("string error")
   })
@@ -90,7 +90,7 @@ describe("fmtError", () => {
   })
 })
 
-describe("integration tests", () => {
+describe("integration", () => {
   test("attempt and fmtError work together", async () => {
     const [, error] = await attempt(async () => {
       throw new Error("Original error")
