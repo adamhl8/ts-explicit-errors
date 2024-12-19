@@ -5,7 +5,7 @@
 
 A concise and type-safe error handling library for TypeScript that mimics Golang's simple and explicit error handling.
 
-- Zero dependencies
+- Zero dependencies (the whole library is only ~40 LoC)
 - Small, easy to understand API
 
 This allows you to treat errors as values so you can write more safe, readable, and maintainable code.
@@ -74,7 +74,7 @@ As an alternative, there are many other libraries available that are inspired by
 - [badrap/result](https://github.com/badrap/result)
 - [everweij/typescript-result](https://github.com/everweij/typescript-result)
 
-However, these libraries tend to be considerably more complex and have a much larger API surface. For reference, `ts-error-tuple` is only ~40 lines of code.
+However, these libraries tend to be considerably more complex and have a much larger API surface. In contrast, `ts-error-tuple` is only ~40 lines of code.
 
 I find Golang's approach to error handling more clear and easy to reason about, which is what this library aims to provide.
 
