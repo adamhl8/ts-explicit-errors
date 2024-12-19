@@ -5,10 +5,16 @@
 
 A concise and type-safe error handling library for TypeScript that mimics Golang's simple and explicit error handling.
 
+- Zero dependencies
+- Small, easy to understand API
+
 This allows you to treat errors as values so you can write more safe, readable, and maintainable code.
+
+---
 
 - [Installation](#installation)
 - [Usage](#usage)
+- [Rationale](#rationale)
 - [API](#api)
   - [`Result` Type](#result-type)
   - [`attempt` Function](#attempt-function)
@@ -51,9 +57,26 @@ if (err) {
 }
 ```
 
-Just like is common in Golang, errors are propagated up the call stack until they are handled.
+Just like is common in Golang, errors are propagated up the call stack which helps build more useful error messages.
 
 If applied correctly and consistently, all errors throughout your codebase are checked and handled immediately.
+
+Please see the [API](#api) description for more details and examples.
+
+## Rationale
+
+Many modern programming languages treat errors as values, and for good reason. It leads to more reliable and maintainable code by forcing error handling to be explicit. In other words, it almost completely eliminates runtime crashes due to unhandled exceptions, which is a very common problem in JS/TS.
+
+As an alternative, there are many other libraries available that are inspired by Rust's `Result` type. Just to name a few:
+
+- [supermacro/neverthrow](https://github.com/supermacro/neverthrow)
+- [vultix/ts-results](https://github.com/vultix/ts-results)
+- [badrap/result](https://github.com/badrap/result)
+- [everweij/typescript-result](https://github.com/everweij/typescript-result)
+
+However, these libraries tend to be considerably more complex and have a much larger API surface. For reference, `ts-error-tuple` is only ~40 lines of code.
+
+I find Golang's approach to error handling more clear and easy to reason about, which is what this library aims to provide.
 
 ## API
 
@@ -79,6 +102,10 @@ type Result<T> = [T, undefined] | [undefined, Error]
 
 The main idea is that **when you would normally write a function that returns `T`, you should instead return `Result<T>`.**
 
+- Functions that don't return anything (i.e. `undefined`) should use the [`Err`](#err-type) type instead.
+
+Instead of this:
+
 ```ts
 function divide(a: number, b: number): number {
   if (b === 0) {
@@ -95,7 +122,7 @@ try {
 }
 ```
 
-Instead, use `Result`:
+Use `Result`:
 
 ```ts
 function divide(a: number, b: number): Result<number> {
@@ -136,14 +163,13 @@ if (err) {
 The function can be either synchronous or asynchronous.
 
 - If the function is async / returns a Promise, the returned `Result` will be a `Promise` and should be `await`ed
-- Otherwise, it will return `Result` directly
 
 ```ts
 // fs.readFile returns a Promise
 const [file, err] = await attempt(() => fs.readFile("file.txt"))
 ```
 
-In the case where a function doesn't return anything but might fail, you can simply ignore the first element of the `Result`.
+In the case where a function doesn't return anything (i.e. `undefined`) but might fail, you can simply ignore the first element of the `Result`.
 
 ```ts
 const [, err] = attempt(() => fs.rmSync("non-existent.txt"))

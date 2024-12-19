@@ -6,6 +6,10 @@
  *
  * The main idea is that **when you would normally write a function that returns `T`, you should instead return `Result<T>`.**
  *
+ * - Functions that don't return anything (i.e. `undefined`) should use the {@link Err} type instead.
+ *
+ * Instead of this:
+ *
  * ```ts
  * function divide(a: number, b: number): number {
  *   if (b === 0) {
@@ -22,7 +26,7 @@
  * }
  * ```
  *
- * Instead, use `Result`:
+ * Use `Result`:
  *
  * ```ts
  * function divide(a: number, b: number): Result<number> {
@@ -131,7 +135,7 @@ function fmtError(message: string, cause?: unknown): Error {
 
   const fullCauseMessage = causeMessages.join(" -> ")
   const errorMessage = fullCauseMessage ? `${message} -> ${fullCauseMessage}` : message
-  const error = new Error(errorMessage)
+  const error = newError(errorMessage)
 
   return error
 }
@@ -163,14 +167,13 @@ function isPromise(value: any): value is Promise<any> {
  * The function can be either synchronous or asynchronous.
  *
  * - If the function is async / returns a Promise, the returned `Result` will be a `Promise` and should be `await`ed
- * - Otherwise, it will return `Result` directly
  *
  * ```ts
  * // fs.readFile returns a Promise
  * const [file, err] = await attempt(() => fs.readFile("file.txt"))
  * ```
  *
- * In the case where a function doesn't return anything but might fail, you can simply ignore the first element of the `Result`.
+ * In the case where a function doesn't return anything (i.e. `undefined`) but might fail, you can simply ignore the first element of the `Result`.
  *
  * ```ts
  * const [, err] = attempt(() => fs.rmSync("non-existent.txt"))
