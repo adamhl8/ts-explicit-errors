@@ -21,17 +21,8 @@
   "exports": {
     ".": "./dist/index.js"
   },
-  "keywords": [
-    "error",
-    "tuple",
-    "typescript",
-    "golang",
-    "error handling",
-    "result"
-  ],
-  "files": [
-    "dist/"
-  ],
+  "keywords": ["error", "tuple", "typescript", "golang", "error handling", "result"],
+  "files": ["dist/"],
   "scripts": {
     "bundle": "rm -rf dist && bun build.ts",
     "lint": "tsc --noEmit && biome check --write . && eslint ."
@@ -39,20 +30,15 @@
   "dependencies": {},
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@eslint/js": "^9.17.0",
-    "@types/bun": "^1.1.14",
+    "@eslint/js": "^9.18.0",
+    "@types/bun": "^1.1.16",
     "@types/eslint__js": "^8.42.3",
-    "bun-plugin-isolated-decl": "^0.1.6",
-    "eslint": "^9.17.0",
+    "bun-plugin-isolated-decl": "^0.1.7",
+    "eslint": "^9.18.0",
     "eslint-config-biome": "^1.9.4",
     "globals": "^15.14.0",
-    "is-glob": "^4.0.3",
-    "oxc-transform": "^0.42.0",
-    "typescript": "^5.7.2",
-    "typescript-eslint": "^8.18.1",
-    "unplugin-isolated-decl": "^0.10.2"
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
   },
-  "trustedDependencies": [
-    "@biomejs/biome"
-  ]
+  "trustedDependencies": ["@biomejs/biome"]
 }
