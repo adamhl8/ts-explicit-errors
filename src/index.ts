@@ -68,21 +68,21 @@ type Result<T> = [T, undefined] | [undefined, Error]
 type Err = Error | undefined
 
 /**
- * Creates a new `Error` from an unknown value.
- *
- * - Returns the original `Error` if it is already an instance of `Error`
- * - Otherwise, creates a new `Error` with the value converted to a string
+ * @param error The value to convert to an `Error`
+ * @returns The original `Error` if it is already an instance of `Error`. Otherwise, creates a new `Error` with the value converted to a string
  */
 function newError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error))
 }
 
 /**
- * Takes a message and a cause (optional), and returns a new `Error` with a nicely formatted message.
+ * @param message The error message
+ * @param cause The cause of the error (optional)
+ * @returns A new `Error` with a nicely formatted message
  *
  * - All nested errors (i.e. errors attached as `cause`) are unwrapped and included in the final error message
  * - The error message is formatted as: `message -> cause1 -> cause2 -> ... -> causeN`
- *
+ * @example
  * ```ts
  * function doTheFirstThing(): Result<string> {
  *   // throws an error with the message "something went wrong"
@@ -121,14 +121,14 @@ function newError(error: unknown): Error {
 function fmtError(message: string, cause?: unknown): Error {
   const causeMessages: string[] = []
   /*
-   * If cause is an instance of Error, use it directly
-   * Otherwise, if cause is a truthy value, create a new Error from it
+   * Make sure cause is an instance of Error
    * This is so we can handle cases where the caller passes in a string or other non-Error value as the cause
    */
-  let nextCause = cause instanceof Error ? cause : cause ? newError(cause) : undefined
+  let nextCause = cause ? newError(cause) : undefined
   while (nextCause) {
     // Only show the name if it's not "Error"
-    const causeMessage = `${nextCause.name === "Error" ? "" : `${nextCause.name}: `}${nextCause.message}`
+    const prefix = nextCause.name === "Error" ? "" : `${nextCause.name}: `
+    const causeMessage = `${prefix}${nextCause.message}`
     causeMessages.push(causeMessage)
     nextCause = nextCause.cause ? newError(nextCause.cause) : undefined
   }
@@ -141,13 +141,17 @@ function fmtError(message: string, cause?: unknown): Error {
 }
 
 /**
- * Checks if a value is a Promise (more specifically, a thenable).
+ * @param value The value to check
+ * @returns `true` if the value is a Promise (more specifically, a thenable)
  */
 function isPromise(value: any): value is Promise<any> {
   return value ? typeof value.then === "function" : false
 }
 
 /**
+ * @param fn The function to execute
+ * @returns A {@link Result}
+ * @description
  * Executes a function, _catches any errors thrown_, and returns a {@link Result}.
  *
  * **It is generally used for functions that _you don't control_ which might throw an error**.

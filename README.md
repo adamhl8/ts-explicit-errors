@@ -33,7 +33,9 @@ bun add ts-error-tuple
 This pattern should look familiar if you've used Golang:
 
 ```typescript
-import { attempt, fmtError, type Result } from "ts-error-tuple"
+import type { Result } from "ts-error-tuple"
+
+import { attempt, fmtError } from "ts-error-tuple"
 
 function getContent(): Result<string> {
   const [contentFile, err] = attempt(() => {
