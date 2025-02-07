@@ -1,4 +1,4 @@
-import { ESLintConfigBuilder } from "@adamhl8/ts-project-configs"
+import { ESLintConfigBuilder } from "eslint-config-builder"
 import tseslint from "typescript-eslint"
 
 const eslintConfig = new ESLintConfigBuilder().jsonYamlToml().testing().build()

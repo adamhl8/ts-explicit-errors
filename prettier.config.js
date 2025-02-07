@@ -1,1 +1,1 @@
-export { prettierConfig as default } from "@adamhl8/ts-project-configs"
+export { prettierConfig as default } from "eslint-config-builder"

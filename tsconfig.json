@@ -1,4 +1,4 @@
 {
-  "extends": "./node_modules/@adamhl8/ts-project-configs/dist/tsconfig.json",
+  "extends": "./node_modules/eslint-config-builder/dist/tsconfig.json",
   "exclude": ["dist/"]
 }
