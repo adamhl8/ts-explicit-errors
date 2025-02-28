@@ -1,15 +1,15 @@
 {
-  "name": "ts-error-tuple",
-  "version": "1.0.0",
+  "name": "ts-explicit-errors",
+  "version": "2.0.0",
   "type": "module",
-  "description": "A concise and type-safe error handling library for TypeScript that mimics Golang's simple and explicit error handling.",
+  "description": "A concise and type-safe error handling library for TypeScript",
   "repository": {
     "type": "git",
-    "url": "https://github.com/adamhl8/ts-error-tuple"
+    "url": "https://github.com/adamhl8/ts-explicit-errors"
   },
-  "homepage": "https://github.com/adamhl8/ts-error-tuple",
+  "homepage": "https://github.com/adamhl8/ts-explicit-errors",
   "bugs": {
-    "url": "https://github.com/adamhl8/ts-error-tuple/issues"
+    "url": "https://github.com/adamhl8/ts-explicit-errors/issues"
   },
   "author": {
     "email": "adamhl@pm.me",
@@ -28,9 +28,7 @@
   ],
   "keywords": [
     "error",
-    "tuple",
     "typescript",
-    "golang",
     "error handling",
     "result"
   ],

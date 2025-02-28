@@ -1,6 +1,8 @@
+import type { CtxError, Result } from "../index.ts"
+
 import { describe, expect, spyOn, test } from "bun:test"
 
-import { attempt, err } from "../index.ts"
+import { attempt, err, isErr } from "../index.ts"
 import { db, example, fakeLogger } from "./example.ts"
 
 class CustomError extends Error {
@@ -18,49 +20,53 @@ const throwsString = () => {
   throw "string error"
 }
 
+function expectErr<T>(result: Result<T>): asserts result is CtxError {
+  expect(isErr(result)).toBe(true)
+}
+
 describe("attempt", () => {
   test("handles successful synchronous operations", () => {
-    const [value, error] = attempt(() => "success")
+    const result = attempt(() => "success")
 
-    expect(value).toBe("success")
-    expect(error).toBeUndefined()
+    expect(isErr(result)).toBe(false)
+    expect(result).toBe("success")
   })
 
   test("handles failed synchronous operations", () => {
-    const [value, error] = attempt(() => {
+    const result = attempt(() => {
       throwsError()
     })
 
-    expect(value).toBeUndefined()
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.fmtErr()).toBe("sync error")
+    expectErr(result)
+
+    expect(result.fmtErr()).toBe("sync error")
   })
 
   test("handles successful async operations", async () => {
-    const [value, error] = await attempt(async () => "async success")
+    const result = await attempt(async () => "async success")
 
-    expect(value).toBe("async success")
-    expect(error).toBeUndefined()
+    expect(isErr(result)).toBe(false)
+    expect(result).toBe("async success")
   })
 
   test("handles failed async operations", async () => {
-    const [value, error] = await attempt(async () => {
+    const result = await attempt(async () => {
       throw new Error("async error")
     })
 
-    expect(value).toBeUndefined()
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.fmtErr()).toBe("async error")
+    expectErr(result)
+
+    expect(result.fmtErr()).toBe("async error")
   })
 
   test("handles non-Error throws", () => {
-    const [value, error] = attempt(() => {
+    const result = attempt(() => {
       throwsString()
     })
 
-    expect(value).toBeUndefined()
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.fmtErr()).toBe("string error")
+    expectErr(result)
+
+    expect(result.fmtErr()).toBe("string error")
   })
 })
 
@@ -132,7 +138,7 @@ describe("CtxError", () => {
       const blankError = new Error("")
       const error = err("", blankError)
 
-      expect(error.fmtErr()).toBe("Unknown error")
+      expect(error.fmtErr("")).toBe("Unknown error")
     })
   })
 
@@ -204,25 +210,26 @@ describe("CtxError", () => {
 
 describe("integration", () => {
   test("attempt and err work together", async () => {
-    const [, error] = await attempt(async () => {
+    const result = await attempt(async () => {
       throw new Error("Original error")
     })
-    const formattedError = err("Operation failed", error)
 
-    expect(formattedError.fmtErr()).toBe("Operation failed -> Original error")
+    expectErr(result)
+
+    expect(result.fmtErr("Operation failed")).toBe("Operation failed -> Original error")
   })
 
   test("handles nested error chains", async () => {
     const deepError = new Error("Deep error")
     const middleError = new Error("Middle error", { cause: deepError })
 
-    const [, error] = await attempt(async () => {
+    const result = await attempt(async () => {
       throw middleError
     })
 
-    const formattedError = err("Top error", error)
+    expectErr(result)
 
-    expect(formattedError.fmtErr()).toBe("Top error -> Middle error -> Deep error")
+    expect(result.fmtErr("Top error")).toBe("Top error -> Middle error -> Deep error")
   })
 
   test("complete example", async () => {
@@ -230,13 +237,12 @@ describe("integration", () => {
       throw new Error("invalid dbId")
     })
 
-    const [connectResult, connectError] = await example()
-    if (!connectError) throw new Error("connectError should be defined")
+    const connectResult = await example()
+    expectErr(connectResult)
 
-    const errorMessage = connectError.fmtErr("something went wrong")
+    const errorMessage = connectResult.fmtErr("something went wrong")
 
-    expect(connectResult).toBeUndefined()
-    expect(fakeLogger.error(errorMessage, connectError)).toBe(
+    expect(fakeLogger.error(errorMessage, connectResult)).toBe(
       "2025-02-28T16:51:01.378Z [db-connect] something went wrong -> failed to get meetings -> failed to connect to database -> invalid dbId",
     )
 
@@ -246,13 +252,12 @@ describe("integration", () => {
       throw new Error("invalid query")
     })
 
-    const [queryResult, queryError] = await example()
-    if (!queryError) throw new Error("queryError should be defined")
+    const queryResult = await example()
+    expectErr(queryResult)
 
-    const errorMessage2 = queryError.fmtErr("something went wrong")
+    const errorMessage2 = queryResult.fmtErr("something went wrong")
 
-    expect(queryResult).toBeUndefined()
-    expect(fakeLogger.error(errorMessage2, queryError)).toBe(
+    expect(fakeLogger.error(errorMessage2, queryResult)).toBe(
       "[db-query] something went wrong -> failed to get meetings -> failed to query db -> invalid query: for 'SELECT * FROM meetings WHERE scheduled_time < actual_end_time'",
     )
 

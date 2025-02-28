@@ -1,6 +1,6 @@
-import type { Err, Result } from "../index.ts"
+import type { CtxError, Result } from "../index.ts"
 
-import { attempt, err } from "../index.ts"
+import { attempt, err, isErr } from "../index.ts"
 
 // For testing purpose, these functions will do nothing by default and we'll mock them in the test
 const db = {
@@ -14,45 +14,43 @@ const db = {
   }) as unknown as (queryString: string) => Promise<string>,
 }
 
-function connectToDb(dbId: string): Err {
-  const [, error] = attempt(() => db.connect(dbId))
-  if (error) {
-    return err("failed to connect to database", error).ctx({
+function connectToDb(dbId: string): Result {
+  const result = attempt(() => db.connect(dbId))
+  if (isErr(result)) {
+    return err("failed to connect to database", result).ctx({
       timestamp: "2025-02-28T16:51:01.378Z",
       logScope: "db-connect",
     })
   }
-  return undefined
 }
 
 async function queryDb(queryString: string): Promise<Result<string>> {
-  const dbConnectionError = connectToDb("db-prod-1")
-  if (dbConnectionError) {
-    return [undefined, dbConnectionError]
+  const connectToDbResult = connectToDb("db-prod-1")
+  if (isErr(connectToDbResult)) {
+    return connectToDbResult
   }
 
   // eslint-disable-next-line @typescript-eslint/promise-function-async
-  const [data, queryError] = await attempt(() => db.query(queryString))
-  if (queryError) {
-    return [undefined, err("failed to query db", queryError).ctx({ queryString, logScope: "db-query" })]
+  const queryResult = await attempt(() => db.query(queryString))
+  if (isErr(queryResult)) {
+    return err("failed to query db", queryResult).ctx({ queryString, logScope: "db-query" })
   }
 
-  return [data, undefined]
+  return queryResult
 }
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 async function example(): Promise<Result<string>> {
-  const [meetings, meetingsQueryError] = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
-  if (meetingsQueryError) {
-    return [undefined, err("failed to get meetings", meetingsQueryError).ctx({ logScope: "main" })]
+  const meetingsQueryResult = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
+  if (isErr(meetingsQueryResult)) {
+    return err("failed to get meetings", meetingsQueryResult).ctx({ logScope: "main" })
   }
 
-  return [meetings, undefined]
+  return meetingsQueryResult
 }
 
 const fakeLogger = {
-  error: (message: string, error: Err) => {
-    if (!error) return ""
+  error: (message: string, error: CtxError) => {
     const logScope = error.get<string>("logScope") ?? "logScope"
     let timestamp = error.get<string>("timestamp") ?? ""
     timestamp &&= `${timestamp} `

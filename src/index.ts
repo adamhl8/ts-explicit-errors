@@ -84,36 +84,25 @@ class CtxError extends Error {
 }
 
 /**
- * Takes a message and a cause (optional) and returns a new {@link CtxError}.
- *
- * - This is a wrapper around `new CtxError()` to make creating errors more concise
- *
- * @param message The error message
- * @param cause The cause of the error (optional)
- * @returns A new {@link CtxError}
- */
-function err(message: string, cause?: unknown): CtxError {
-  return new CtxError(message, { cause })
-}
-
-/**
- * Represents a tuple that contains a value or an error.
- *
- * - If the value is present, the error is `undefined`
- * - Conversely, if the error is present, the value is `undefined`
+ * Represents a value or a {@link CtxError}.
  *
  * The main idea is that **when you would normally write a function that returns `T`, you should instead return `Result<T>`.**
  *
- * - Functions that don't return anything (i.e. `undefined`) should use the {@link Err} type instead.
+ * - If your function doesn't return anything (i.e. `undefined`) other than an error, you can use `Result` without a type argument since `void` is the default
  */
-type Result<T> = [T, undefined] | [undefined, CtxError]
+type Result<T = void> = T | CtxError
 
 /**
- * A type alias for `CtxError | undefined` to make function return types more readable.
+ * Checks if a value is an instance of {@link CtxError}.
  *
- * - This is used for functions that don't return a value but may return an error.
+ * - This is a wrapper around `result instanceof CtxError` to make type narrowing more concise
+ *
+ * @param result The value to check
+ * @returns `true` if the value is an instance of {@link CtxError}, otherwise `false`
  */
-type Err = CtxError | undefined
+function isErr<T>(result: Result<T>): result is CtxError {
+  return result instanceof CtxError
+}
 
 /**
  * @param value The value to check
@@ -141,16 +130,24 @@ function attempt<T>(fn: () => T): Result<T>
 function attempt<T>(fn: () => Promise<T> | T) {
   try {
     const result = fn()
-    if (isPromise(result)) {
-      return result
-        .then((value) => [value, undefined] as const)
-        .catch((error: unknown) => [undefined, err("", error)] as const)
-    }
-    return [result, undefined] as const
+    return isPromise(result) ? result.then((value) => value).catch((error: unknown) => err("", error)) : result
   } catch (error) {
-    return [undefined, err("", error)] as const
+    return err("", error)
   }
 }
 
-export { attempt, err }
-export type { Result, Err }
+/**
+ * Takes a message and a cause (optional) and returns a new {@link CtxError}.
+ *
+ * - This is a wrapper around `new CtxError()` to make creating errors more concise
+ *
+ * @param message The error message
+ * @param cause The cause of the error (optional)
+ * @returns A new {@link CtxError}
+ */
+function err(message: string, cause?: unknown): CtxError {
+  return new CtxError(message, { cause })
+}
+
+export { attempt, err, isErr, CtxError }
+export type { Result }

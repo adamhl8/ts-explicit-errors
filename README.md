@@ -1,9 +1,9 @@
-# ts-error-tuple
+# ts-explicit-errors
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/ts-error-tuple.svg)](https://www.npmjs.com/package/ts-error-tuple)
+[![npm version](https://img.shields.io/npm/v/ts-explicit-errors.svg)](https://www.npmjs.com/package/ts-explicit-errors)
 
-A concise and type-safe error handling library for TypeScript that mimics Golang's simple and explicit error handling, with added support for error context.
+A concise and type-safe error handling library for TypeScript that provides explicit error handling with added support for error context.
 
 - Zero dependencies (the whole library is only ~60 LoC)
 - Small, easy to understand API
@@ -18,79 +18,75 @@ This allows you to treat errors as values so you can write more safe, readable, 
 - [Rationale](#rationale)
 - [API](#api)
   - [`Result` Type](#result-type)
+  - [`isErr` Function](#iserr-function)
   - [`attempt` Function](#attempt-function)
   - [`err` Function](#err-function)
   - [`CtxError` Class](#ctxerror-class)
     - [`ctx` Method](#ctx-method)
     - [`get` Method](#get-method)
     - [`fmtErr` Method](#fmterr-method)
-  - [`Err` Type](#err-type)
 - [Example](#example)
 
 ## Installation
 
 ```bash
-bun add ts-error-tuple
-# npm install ts-error-tuple
+bun add ts-explicit-errors
+# npm install ts-explicit-errors
 ```
 
 ## Usage
 
-This pattern should look familiar if you've used Golang:
+```ts
+import type { Result } from "ts-explicit-errors"
 
-```typescript
-import type { Result } from "ts-error-tuple"
-
-import { attempt, err } from "ts-error-tuple"
+import { attempt, err, isErr } from "ts-explicit-errors"
 
 function getUserById(id: number): Result<User> {
   // Use the attempt function to handle potential thrown errors from external code
-  const [user, error] = attempt(() => db.findUser(id)) // pretend that db.findUser throws an Error with the message: "failed to connect to database"
+  const result = attempt(() => db.findUser(id))
+  // pretend that db.findUser throws an Error with the message: "failed to connect to database"
 
-  if (error) return [undefined, err("failed to find user", error)]
+  if (isErr(result)) return err("failed to find user", result)
 
-  return [user, undefined]
+  return result
 }
 
-const [user, error] = getUserById(123)
-if (error) console.error(error.fmtErr())
+const result = getUserById(123)
+if (isErr(result)) console.error(result.fmtErr())
 // "failed to find user -> failed to connect to database"
-else console.log(`Hello, ${user.name}!`)
+else console.log(`Hello, ${result.name}!`)
 ```
 
 You can also add context to errors to help with debugging and logging:
 
-```typescript
+```ts
 function getUserById(id: number): Result<User> {
-  const [user, error] = attempt(() => db.findUser(id))
+  const result = attempt(() => db.findUser(id))
 
-  if (error) {
+  if (isErr(result)) {
     // Add context to the error before returning it
-    return [
-      undefined,
-      err("failed to find user", error).ctx({
-        userId: id,
-        operation: "findUser",
-        timestamp: new Date().toISOString(),
-      }),
-    ]
+    return err("failed to find user", result).ctx({
+      userId: id,
+      operation: "findUser",
+      timestamp: new Date().toISOString(),
+    })
   }
 
-  return [user, undefined]
+  return result
 }
 
-const [user, error] = getUserById(123)
-if (error) {
-  console.error(error.fmtErr()) // "failed to find user -> failed to connect to database"
+const result = getUserById(123)
+if (isErr(result)) {
+  console.error(result.fmtErr()) // "failed to find user -> failed to connect to database"
 
   // Get the context for logging or debugging
-  console.log(`Error for user ID: ${error.get("userId")}`)
-  console.log(`Operation: ${error.get("operation")}`)
-  console.log(`Timestamp: ${error.get("timestamp")}`)
-} else console.log(`Hello, ${user.name}!`)
+  console.log(`Error for user ID: ${result.get("userId")}`)
+  console.log(`Operation: ${result.get("operation")}`)
+  console.log(`Timestamp: ${result.get("timestamp")}`)
+} else console.log(`Hello, ${result.name}!`)
 ```
 
-Just like is common in Golang, errors are propagated up the call stack which helps build more useful error messages.
+Errors are propagated up the call stack which helps build more useful error messages.
 
 If applied correctly and consistently, all errors throughout your codebase are checked and handled immediately.
 
@@ -107,36 +103,37 @@ As an alternative, there are many other libraries available that are inspired by
 - [badrap/result](https://github.com/badrap/result)
 - [everweij/typescript-result](https://github.com/everweij/typescript-result)
 
-However, these libraries tend to be considerably more complex and have a much larger API surface. In contrast, `ts-error-tuple` is only ~60 lines of code.
-
-I find Golang's approach to error handling more clear and easy to reason about, which is what this library aims to provide.
+However, these libraries tend to be considerably more complex and have a much larger API surface. In contrast, `ts-explicit-errors` is only ~60 lines of code.
 
 ## API
 
-In an effort to keep the API concise, `ts-error-tuple` only exports four things:
+In an effort to keep the API concise, `ts-explicit-errors` only exports a few things:
 
 - `Result` Type
+- `isErr` Function
 - `attempt` Function
 - `err` Function
-  - The `CtxError` Class is not exported and is instead accessed via `err`
-- `Err` Type
+  - The `CtxError` Class is also exported but should generally be accessed via `err`
 
 ---
 
 ### `Result` Type
 
 ```ts
-type Result<T> = [T, undefined] | [undefined, CtxError]
+type Result<T = void> = T | CtxError
 ```
 
-`Result` represents a tuple that contains a value or an error.
-
-- If the value is present, the error is `undefined`
-- Conversely, if the error is present, the value is `undefined`
+`Result` represents a value or a `CtxError`.
 
 The main idea is that **when you would normally write a function that returns `T`, you should instead return `Result<T>`.**
 
-- Functions that don't return anything (i.e. `undefined`) should use the [`Err`](#err-type) type instead.
+- If your function doesn't return anything (i.e. `undefined`) other than an error, you can use `Result` without a type argument since `void` is the default
+
+  ```ts
+  function validateData(data: string): Result {
+    if (data.length < 10) return err("data is too short")
+  }
+  ```
 
 Instead of this:
 
@@ -161,15 +158,38 @@ Use `Result`:
 ```ts
 function divide(a: number, b: number): Result<number> {
   if (b === 0) {
-    return [undefined, err("division by zero")]
+    return err("division by zero")
   }
-  return [a / b, undefined]
+  return a / b
 }
 
-const [result, error] = divide(10, 0)
-if (error) {
-  console.error(error.fmtErr("failed to divide")) //  "failed to divide -> division by zero"
+const result = divide(10, 0)
+if (isErr(result)) {
+  console.error(result.fmtErr("failed to divide")) //  "failed to divide -> division by zero"
 } else {
+  console.log(result)
+}
+```
+
+---
+
+### `isErr` Function
+
+```ts
+function isErr<T>(result: Result<T>): result is CtxError
+```
+
+`isErr` checks if a value is an instance of `CtxError`.
+
+- This is a wrapper around `result instanceof CtxError` to make type narrowing more concise
+
+```ts
+const result = attempt(() => mayThrow())
+if (isErr(result)) {
+  // result is a CtxError
+  console.error(result.fmtErr())
+} else {
+  // result is of type T
   console.log(result)
 }
 ```
@@ -187,11 +207,11 @@ if (error) {
 
 ```ts
 // in some function that returns a Result
-const [file, error] = attempt(() => fs.readFileSync("non-existent.json"))
-if (error) {
-  return [undefined, err("failed to read file", error)]
+const result = attempt(() => fs.readFileSync("non-existent.json"))
+if (isErr(result)) {
+  return err("failed to read file", result)
 }
-// do something with `file`
+// do something with `result`
 ```
 
 The function can be either synchronous or asynchronous.
@@ -200,16 +220,7 @@ The function can be either synchronous or asynchronous.
 
 ```ts
 // fs.readFile returns a Promise
-const [file, error] = await attempt(() => fs.readFile("file.txt"))
-```
-
-In the case where a function doesn't return anything (i.e. `undefined`) but might fail, you can simply ignore the first element of the `Result`.
-
-```ts
-const [, error] = attempt(() => fs.rmSync("non-existent.txt"))
-if (error) {
-  console.error(error.fmtErr("failed to remove file")) // "failed to remove file -> ENOENT: no such file or directory"
-}
+const result = await attempt(() => fs.readFile("file.txt"))
 ```
 
 ---
@@ -310,30 +321,6 @@ console.log(topError.fmtErr("something went wrong"))
 
 ---
 
-### `Err` Type
-
-```ts
-type Err = CtxError | undefined
-```
-
-`Err` is a type alias for `CtxError | undefined` to make function return types more readable.
-
-- This is used for functions that don't return a value but may return an error.
-
-```ts
-function validateData(data: string): Err {
-  if (data.length < 10) {
-    return err("data is too short")
-  }
-  // implicit return undefined
-}
-
-const error = validateData("short")
-if (error) {
-  console.error(error.fmtErr("failed to validate data")) // "failed to validate data -> data is too short"
-}
-```
-
 ## Example
 
 This example is a bit contrived, but use your imagination :)
@@ -341,9 +328,9 @@ This example is a bit contrived, but use your imagination :)
 Putting it all together:
 
 ```ts
-import type { Err, Result } from "ts-error-tuple"
+import type { Result } from "ts-explicit-errors"
 
-import { attempt, err } from "ts-error-tuple"
+import { attempt, err, isErr } from "ts-explicit-errors"
 
 // Pretend this "db" module doesn't belong to us and its functions might throw errors
 const db = {
@@ -355,47 +342,45 @@ const db = {
   },
 }
 
-// This function doesn't return a value (other than a possible error), so we use `Err`
-function connectToDb(dbId: string): Err {
-  // Use attempt because db.connect() might throw
-  const [, error] = attempt(() => db.connect(dbId))
-  if (error) {
-    return err("failed to connect to database", error).ctx({
+// This function doesn't return a value (other than a possible error), so we use `Result` without a type argument
+function connectToDb(dbId: string): Result {
+  const result = attempt(() => db.connect(dbId))
+  if (isErr(result)) {
+    return err("failed to connect to database", result).ctx({
       timestamp: new Date().toISOString(),
       logScope: "db-connect",
     })
   }
-  return undefined
 }
 
-// A function that returns a `Result`
+// A function that returns a `Result` of a specific type
 async function queryDb(queryString: string): Promise<Result<DbQuery>> {
-  const dbConnectionError = connectToDb("db-prod-1")
-  if (dbConnectionError) {
-    // We don't need to provide an additional message or context here, so we return the error directly instead of using `err`
-    return [undefined, dbConnectionError]
+  const connectToDbResult = connectToDb("db-prod-1")
+  if (isErr(connectToDbResult)) {
+    // We don't need to provide an additional message or context here, so we return the error directly
+    return connectToDbResult
   }
 
-  const [data, queryError] = await attempt(() => db.query(queryString))
-  if (queryError) {
-    return [undefined, err("failed to query db", queryError).ctx({ queryString, logScope: "db-query" })]
+  const queryResult = await attempt(() => db.query(queryString))
+  if (isErr(queryResult)) {
+    return err("failed to query db", queryResult).ctx({ queryString, logScope: "db-query" })
   }
 
-  return [data, undefined]
+  return queryResult
 }
 
 async function main(): Promise<Result<Meeting[]>> {
-  const [meetings, meetingsQueryError] = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
-  if (meetingsQueryError) {
-    return [undefined, err("failed to get meetings", meetingsQueryError).ctx({ logScope: "main" })]
+  const meetingsResult = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
+  if (isErr(meetingsResult)) {
+    return err("failed to get meetings", meetingsResult).ctx({ logScope: "main" })
   }
 
-  return [meetings, undefined]
+  return meetingsResult
 }
 
-const [result, error] = await main()
-if (error) {
-  logger.error(error.fmtErr("something went wrong"), error) // we pass the error so the logger can call .get() to get the context
+const result = await main()
+if (isErr(result)) {
+  logger.error(result.fmtErr("something went wrong"), result) // we pass the error so the logger can call .get() to get the context
 } else console.log(result)
 ```
 
