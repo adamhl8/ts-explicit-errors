@@ -9,8 +9,6 @@ export default tseslint.config(
   {
     files: ["src/index.ts"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
       "promise/prefer-await-to-then": "off",
       "promise/prefer-await-to-callbacks": "off",
     },
