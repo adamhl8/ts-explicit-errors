@@ -94,7 +94,7 @@ Just like is common in Golang, errors are propagated up the call stack which hel
 
 If applied correctly and consistently, all errors throughout your codebase are checked and handled immediately.
 
-Please see the [API](#api) description for more details and examples. Also see [API](#example) for a more in-depth example.
+Please see the [API](#api) description for more details and examples. Also see [Example](#example) for a more in-depth example.
 
 ## Rationale
 
