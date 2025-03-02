@@ -132,7 +132,12 @@ The main idea is that **when you would normally write a function that returns `T
   ```ts
   function validateData(data: string): Result {
     if (data.length < 10) return err("data is too short")
+    // validate data...
   }
+
+  const error = validateData("short")
+  // Using `isErr` would be redundant here since this is either `undefined` or a `CtxError`, so a truthy check is all that is needed
+  if (error) // handle the `CtxError`
   ```
 
 Instead of this:
@@ -192,6 +197,26 @@ if (isErr(result)) {
   // result is of type T
   console.log(result)
 }
+```
+
+If you have a function that returns `Result<void>` (the default when `Result` is not given a type argument), you don't need to use `isErr`.
+
+```ts
+function validateData(data: string): Result {
+  if (data.length < 10) return err("data is too short")
+}
+
+const result = validateData("short")
+// Redundant
+if (isErr(result)) console.error(result.fmtErr())
+```
+
+In this case, `result` is either `undefined` or a `CtxError`, so a truthy check is all that is needed.
+
+```ts
+// Note how we also name this `error` instead of `result` which is a bit more clear
+const error = validateData("short")
+if (error) console.error(error.fmtErr())
 ```
 
 ---
@@ -355,10 +380,11 @@ function connectToDb(dbId: string): Result {
 
 // A function that returns a `Result` of a specific type
 async function queryDb(queryString: string): Promise<Result<DbQuery>> {
-  const connectToDbResult = connectToDb("db-prod-1")
-  if (isErr(connectToDbResult)) {
+  const connectToDbError = connectToDb("db-prod-1")
+  // Using `isErr` would be redundant here since `connectToDbError` is either `undefined` or a `CtxError`, so a truthy check is all that is needed
+  if (connectToDbError) {
     // We don't need to provide an additional message or context here, so we return the error directly
-    return connectToDbResult
+    return connectToDbError
   }
 
   const queryResult = await attempt(() => db.query(queryString))

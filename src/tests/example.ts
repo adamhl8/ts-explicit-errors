@@ -25,9 +25,9 @@ function connectToDb(dbId: string): Result {
 }
 
 async function queryDb(queryString: string): Promise<Result<string>> {
-  const connectToDbResult = connectToDb("db-prod-1")
-  if (isErr(connectToDbResult)) {
-    return connectToDbResult
+  const connectToDbError = connectToDb("db-prod-1")
+  if (connectToDbError) {
+    return connectToDbError
   }
 
   // eslint-disable-next-line @typescript-eslint/promise-function-async
