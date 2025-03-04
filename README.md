@@ -133,7 +133,7 @@ The main idea is that **when you would normally write a function that returns `T
   ```ts
   function validateData(data: string): Result {
     if (data.length < 10) return err("data is too short")
-    // validate data...
+    // use data...
   }
 
   const error = validateData("short")
