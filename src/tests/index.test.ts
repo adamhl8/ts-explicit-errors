@@ -3,7 +3,7 @@ import type { CtxError, Result } from "../index.ts"
 import { describe, expect, spyOn, test } from "bun:test"
 
 import { attempt, err, isErr } from "../index.ts"
-import { db, example, fakeLogger } from "./example.ts"
+import { db, exampleMainWrapper } from "./example.ts"
 
 class CustomError extends Error {
   public constructor(message: string) {
@@ -188,7 +188,7 @@ describe("CtxError", () => {
       expect(error.get<undefined>("undefinedValue")).toBeUndefined()
     })
 
-    test("retrieves value from cause chain", () => {
+    test("retrieves values from cause chain", () => {
       const deepError = err("Deep error").ctx({ deepKey: "foo" })
       const middleError = err("Middle error", deepError).ctx({ middleKey: "bar" })
       const topError = err("Top error", middleError).ctx({ topKey: "baz" })
@@ -204,6 +204,64 @@ describe("CtxError", () => {
       const topError = err("Top error", middleError).ctx({ topKey: "baz", shared: "top" })
 
       expect(topError.get<string>("shared")).toBe("deep")
+    })
+  })
+
+  describe("getAll", () => {
+    test("retrieves single context value as array", () => {
+      const error = err("Base message").ctx({ foo: "bar" })
+
+      expect(error.getAll("foo")).toEqual(["bar"])
+    })
+
+    test("returns empty array for non-existent key", () => {
+      const error = err("Base message").ctx({ foo: "bar" })
+
+      expect(error.getAll("nonexistent")).toEqual([])
+    })
+
+    test("retrieves falsy values correctly", () => {
+      const error = err("Base message").ctx({
+        zero: 0,
+        empty: "",
+        falseValue: false,
+        // eslint-disable-next-line unicorn/no-null
+        nullValue: null,
+        undefinedValue: undefined,
+      })
+
+      expect(error.getAll("zero")).toEqual([0])
+      expect(error.getAll("empty")).toEqual([""])
+      expect(error.getAll("falseValue")).toEqual([false])
+      // eslint-disable-next-line unicorn/no-null
+      expect(error.getAll("nullValue")).toEqual([null])
+      expect(error.getAll("undefinedValue")).toEqual([undefined])
+    })
+
+    test("retrieves values from cause chain", () => {
+      const deepError = err("Deep error").ctx({ deepKey: "foo" })
+      const middleError = err("Middle error", deepError).ctx({ middleKey: "bar" })
+      const topError = err("Top error", middleError).ctx({ topKey: "baz" })
+
+      expect(topError.getAll("deepKey")).toEqual(["foo"])
+      expect(topError.getAll("middleKey")).toEqual(["bar"])
+      expect(topError.getAll("topKey")).toEqual(["baz"])
+    })
+
+    test("retrieves all values for shared keys in shallowest to deepest order", () => {
+      const deepError = err("Deep error").ctx({ shared: "deep" })
+      const middleError = err("Middle error", deepError).ctx({ shared: "middle" })
+      const topError = err("Top error", middleError).ctx({ shared: "top" })
+
+      expect(topError.getAll<string>("shared")).toEqual(["top", "middle", "deep"])
+    })
+
+    test("handles gaps in the error chain", () => {
+      const deepError = err("Deep error").ctx({ shared: "deep" })
+      const middleError = err("Middle error", deepError).ctx({ otherKey: "other" })
+      const topError = err("Top error", middleError).ctx({ shared: "top" })
+
+      expect(topError.getAll("shared")).toEqual(["top", "deep"])
     })
   })
 })
@@ -237,13 +295,10 @@ describe("integration", () => {
       throw new Error("invalid dbId")
     })
 
-    const connectResult = await example()
-    expectErr(connectResult)
+    const connectErrorFakeLoggerOutput = await exampleMainWrapper()
 
-    const errorMessage = connectResult.fmtErr("something went wrong")
-
-    expect(fakeLogger.error(errorMessage, connectResult)).toBe(
-      "2025-02-28T16:51:01.378Z [db-connect] something went wrong -> failed to get meetings -> failed to connect to database -> invalid dbId",
+    expect(connectErrorFakeLoggerOutput).toBe(
+      "<timestamp1> [main|connect] something went wrong -> failed to get meetings -> failed to connect to database -> invalid dbId",
     )
 
     connectSpy.mockRestore()
@@ -252,13 +307,10 @@ describe("integration", () => {
       throw new Error("invalid query")
     })
 
-    const queryResult = await example()
-    expectErr(queryResult)
+    const queryErrorFakeLoggerOutput = await exampleMainWrapper()
 
-    const errorMessage2 = queryResult.fmtErr("something went wrong")
-
-    expect(fakeLogger.error(errorMessage2, queryResult)).toBe(
-      "[db-query] something went wrong -> failed to get meetings -> failed to query db -> invalid query: for 'SELECT * FROM meetings WHERE scheduled_time < actual_end_time'",
+    expect(queryErrorFakeLoggerOutput).toBe(
+      "<timestamp2> [main|query] something went wrong -> failed to get meetings -> failed to query db -> invalid query: for 'SELECT * FROM meetings WHERE scheduled_time < actual_end_time'",
     )
 
     querySpy.mockRestore()

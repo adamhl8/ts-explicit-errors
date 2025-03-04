@@ -52,6 +52,26 @@ class CtxError extends Error {
   }
 
   /**
+   * Retrieves all context values as an array for a given key from the entire error chain (this error and all its causes).
+   *
+   * - Values are returned in order from shallowest (this error) to deepest (root cause)
+   * - Unlike {@link get} which returns the deepest value, this returns all values as an array
+   *
+   * @param key The key to look up in the context chain
+   * @returns An array of all context values found for the given key
+   */
+  public getAll<T>(key: string): T[] {
+    const values = []
+
+    if (this.context && Object.hasOwn(this.context, key)) values.push(this.context[key])
+
+    if (this.cause instanceof CtxError) values.push(...this.cause.getAll(key))
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+    return values as T[]
+  }
+
+  /**
    * Returns a nicely formatted error message by unwrapping all error messages in the error chain (this error and all its causes).
    *
    * - The error message is formatted as: `message -> cause1 -> cause2 -> ... -> causeN`

@@ -1,4 +1,4 @@
-import type { CtxError, Result } from "../index.ts"
+import type { Result } from "../index.ts"
 
 import { attempt, err, isErr } from "../index.ts"
 
@@ -18,8 +18,8 @@ function connectToDb(dbId: string): Result {
   const result = attempt(() => db.connect(dbId))
   if (isErr(result)) {
     return err("failed to connect to database", result).ctx({
-      timestamp: "2025-02-28T16:51:01.378Z",
-      logScope: "db-connect",
+      timestamp: "<timestamp1>",
+      logScope: "connect",
     })
   }
 }
@@ -33,14 +33,13 @@ async function queryDb(queryString: string): Promise<Result<string>> {
   // eslint-disable-next-line @typescript-eslint/promise-function-async
   const queryResult = await attempt(() => db.query(queryString))
   if (isErr(queryResult)) {
-    return err("failed to query db", queryResult).ctx({ queryString, logScope: "db-query" })
+    return err("failed to query db", queryResult).ctx({ queryString, logScope: "query", timestamp: "<timestamp2>" })
   }
 
   return queryResult
 }
 
-// eslint-disable-next-line jsdoc/require-jsdoc
-async function example(): Promise<Result<string>> {
+async function main(): Promise<Result<string>> {
   const meetingsQueryResult = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
   if (isErr(meetingsQueryResult)) {
     return err("failed to get meetings", meetingsQueryResult).ctx({ logScope: "main" })
@@ -49,16 +48,37 @@ async function example(): Promise<Result<string>> {
   return meetingsQueryResult
 }
 
+// eslint-disable-next-line jsdoc/require-jsdoc
+async function exampleMainWrapper() {
+  // wrapped so we can export for use in the tests
+  const result = await main()
+  if (isErr(result)) {
+    const fullContext = {
+      logScope: result.getAll<string>("logScope").join("|"),
+      timestamp: result.get<string>("timestamp") ?? "",
+      queryString: result.get<string>("queryString") ?? "",
+    }
+
+    return fakeLogger.error(result.fmtErr("something went wrong"), fullContext)
+  } // else console.log(result)
+  return ""
+}
+
+interface ErrorContext {
+  logScope: string
+  timestamp: string
+  queryString: string
+}
+
 const fakeLogger = {
-  error: (message: string, error: CtxError) => {
-    const logScope = error.get<string>("logScope") ?? "logScope"
-    let timestamp = error.get<string>("timestamp") ?? ""
+  error: (message: string, context: ErrorContext) => {
+    let { logScope, timestamp, queryString } = context
+    logScope = `[${logScope}]`
     timestamp &&= `${timestamp} `
-    let queryStringMessage = error.get<string>("queryString") ?? ""
-    queryStringMessage &&= `: for '${queryStringMessage}'`
-    const errorMessage = `${timestamp}[${logScope}] ${message}${queryStringMessage}`
+    queryString &&= `: for '${queryString}'`
+    const errorMessage = `${timestamp}${logScope} ${message}${queryString}`
     return errorMessage
   },
 }
 
-export { example, fakeLogger, db }
+export { exampleMainWrapper, fakeLogger, db }

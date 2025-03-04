@@ -24,6 +24,7 @@ This allows you to treat errors as values so you can write more safe, readable, 
   - [`CtxError` Class](#ctxerror-class)
     - [`ctx` Method](#ctx-method)
     - [`get` Method](#get-method)
+    - [`getAll` Method](#getall-method)
     - [`fmtErr` Method](#fmterr-method)
 - [Example](#example)
 
@@ -316,7 +317,27 @@ const deepError = err("failed to connect to database").ctx({ logScope: "database
 const middleError = err("failed to do the thing", deepError).ctx({ logScope: "service" })
 const topError = err("failed to process request", middleError).ctx({ logScope: "controller" })
 
-console.log(topError.get("scope")) // "database" (from deepError)
+console.log(topError.get("logScope")) // "database" (from deepError)
+```
+
+#### `getAll` Method
+
+```ts
+getAll<T>(key: string): T[]
+```
+
+Retrieves all context values as an array for a given key from the entire error chain (this error and all its causes).
+
+- Values are returned in order from shallowest (this error) to deepest (root cause)
+- Unlike `get` which returns the deepest value, this returns all values as an array
+
+```ts
+// imagine these errors are propagated up through various function calls
+const deepError = err("failed to connect to database").ctx({ logScope: "database" })
+const middleError = err("failed to do the thing", deepError).ctx({ logScope: "service" })
+const topError = err("failed to process request", middleError).ctx({ logScope: "controller" })
+
+console.log(topError.getAll("logScope")) // ["controller", "service", "database"]
 ```
 
 #### `fmtErr` Method
@@ -372,8 +393,8 @@ function connectToDb(dbId: string): Result {
   const result = attempt(() => db.connect(dbId))
   if (isErr(result)) {
     return err("failed to connect to database", result).ctx({
-      timestamp: new Date().toISOString(),
-      logScope: "db-connect",
+      timestamp: "<timestamp1>", // pretend this is something like new Date().toISOString()
+      logScope: "connect",
     })
   }
 }
@@ -389,28 +410,34 @@ async function queryDb(queryString: string): Promise<Result<DbQuery>> {
 
   const queryResult = await attempt(() => db.query(queryString))
   if (isErr(queryResult)) {
-    return err("failed to query db", queryResult).ctx({ queryString, logScope: "db-query" })
+    return err("failed to query db", queryResult).ctx({ queryString, logScope: "query", timestamp: "<timestamp2>" })
   }
 
   return queryResult
 }
 
 async function main(): Promise<Result<Meeting[]>> {
-  const meetingsResult = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
-  if (isErr(meetingsResult)) {
-    return err("failed to get meetings", meetingsResult).ctx({ logScope: "main" })
+  const meetingsQueryResult = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
+  if (isErr(meetingsQueryResult)) {
+    return err("failed to get meetings", meetingsQueryResult).ctx({ logScope: "main" })
   }
 
-  return meetingsResult
+  return meetingsQueryResult
 }
 
-const result = await main()
+const result = await example()
 if (isErr(result)) {
-  logger.error(result.fmtErr("something went wrong"), result) // we pass the error so the logger can call .get() to get the context
+  const fullContext = {
+    logScope: result.getAll<string>("logScope").join("|"),
+    timestamp: result.get<string>("timestamp") ?? "",
+    queryString: result.get<string>("queryString") ?? "",
+  }
+
+  logger.error(result.fmtErr("something went wrong"), fullContext)
 } else console.log(result)
 ```
 
-In the above, let's say we have some `logger` that is able to handle our context. We'll pretend that it prefixes our error message with the context as a nicely formatted string. e.g. `${timestamp}[${logScope}]`
+In the above, let's say we have some `logger` that is able to handle our context. We'll pretend that it prefixes our error message with the context as a nicely formatted string. e.g. `${timestamp} [${logScope}]`
 
 Looking at the example, we have two situations where there could be an error: 1. `db.connect()` 2. `db.query()`
 
@@ -419,15 +446,13 @@ Let's see what each error would look like:
 For `db.connect()`:
 
 ```
-2025-02-28T16:51:01.378Z [db-connect] something went wrong -> failed to get meetings -> failed to connect to database -> invalid dbId
+<timestamp1> [main|connect] something went wrong -> failed to get meetings -> failed to connect to database -> invalid dbId
 ```
 
 For `db.query()`:
 
 ```
-[db-query] something went wrong -> failed to get meetings -> failed to query db -> invalid query: for 'SELECT \* FROM meetings WHERE scheduled_time < actual_end_time'
+<timestamp2> [main|query] something went wrong -> failed to get meetings -> failed to query db -> invalid query: for 'SELECT * FROM meetings WHERE scheduled_time < actual_end_time'
 ```
 
 In this case, our logger appended `: for '${queryString}'`
-
-Note that in both cases, the "deeper" `logScope` won.
