@@ -2,7 +2,7 @@ import type { CtxError, Result } from "../index.ts"
 
 import { describe, expect, spyOn, test } from "bun:test"
 
-import { attempt, err, isErr } from "../index.ts"
+import { attempt, err, errWithCtx, isErr } from "../index.ts"
 import { db, exampleMainWrapper } from "./example.ts"
 
 class CustomError extends Error {
@@ -263,6 +263,53 @@ describe("CtxError", () => {
 
       expect(topError.getAll("shared")).toEqual(["top", "deep"])
     })
+  })
+})
+
+describe("errWithCtx", () => {
+  test("creates an error with predefined context", () => {
+    const scopedErr = errWithCtx({ scope: "foo" })
+    const error = scopedErr("Base message")
+
+    expectErr(error)
+
+    expect(error.fmtErr()).toBe("Base message")
+    expect(error.context).toEqual({ scope: "foo" })
+  })
+
+  test("passes cause to the error", () => {
+    const scopedErr = errWithCtx({ scope: "foo" })
+    const cause = new Error("cause message")
+    const error = scopedErr("Base message", cause)
+
+    expectErr(error)
+
+    expect(error.fmtErr()).toBe("Base message -> cause message")
+    expect(error.cause).toBe(cause)
+    expect(error.context).toEqual({ scope: "foo" })
+  })
+
+  test("allows adding additional context", () => {
+    const scopedErr = errWithCtx({ scope: "foo" })
+    const error = scopedErr("Base message").ctx({ bar: 123 })
+
+    expectErr(error)
+
+    expect(error.fmtErr()).toBe("Base message")
+    expect(error.context).toEqual({ scope: "foo", bar: 123 })
+  })
+
+  test("works with error chaining", () => {
+    const fooErr = errWithCtx({ scope: "foo" })
+    const barErr = errWithCtx({ scope: "bar" })
+
+    const fooError = fooErr("foo error")
+    const barError = barErr("bar error", fooError)
+
+    expectErr(barError)
+
+    expect(barError.fmtErr()).toBe("bar error -> foo error")
+    expect(barError.getAll("scope")).toEqual(["bar", "foo"])
   })
 })
 

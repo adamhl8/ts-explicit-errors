@@ -1,12 +1,14 @@
+type DefaultContext = Record<string, unknown>
+
 /**
  * A custom error class that extends the built-in {@link Error} class with additional functionality.
  *
  * - All instances of `CtxError` are instances of `Error`, so using them in place of `Error` won't cause any issues.
  */
 class CtxError extends Error {
-  public context?: Record<string, unknown>
+  public context?: DefaultContext
 
-  public constructor(message: string, options?: { cause?: unknown; context?: Record<string, unknown> }) {
+  public constructor(message: string, options?: { cause?: unknown; context?: DefaultContext }) {
     super(message, { cause: options?.cause })
     this.name = "CtxError"
 
@@ -26,7 +28,7 @@ class CtxError extends Error {
    * @param context The context to add
    * @returns This error with context
    */
-  public ctx(context: Record<string, unknown>): this {
+  public ctx(context: DefaultContext): this {
     this.context = { ...this.context, ...context }
     return this
   }
@@ -169,5 +171,25 @@ function err(message: string, cause?: unknown): CtxError {
   return new CtxError(message, { cause })
 }
 
-export { attempt, err, isErr, CtxError }
+/**
+ * Creates a {@link err} function with predefined context.
+ *
+ * This is useful when you want to create multiple errors with the same context, such as a common scope or component name.
+ *
+ * ```ts
+ * const serviceErr = errWithCtx({ scope: "userService" });
+ *
+ * // Later in your code
+ * if (isErr(result)) return serviceErr("failed to find user", result);
+ * // The error will automatically have { scope: "userService" } in its context
+ * ```
+ *
+ * @param defaultContext The default context to attach to all errors created by this function
+ * @returns A `err` function with predefined context
+ */
+function errWithCtx(defaultContext: DefaultContext) {
+  return (message: string, cause?: unknown): CtxError => err(message, cause).ctx(defaultContext)
+}
+
+export { attempt, CtxError, err, errWithCtx, isErr }
 export type { Result }

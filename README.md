@@ -5,7 +5,7 @@
 
 A concise and type-safe error handling library for TypeScript that provides explicit error handling with added support for error context.
 
-- Zero dependencies (the whole library is only ~60 LoC)
+- Zero dependencies (the whole library is only ~70 LoC)
 - Small, easy to understand API
 - Attach and retrieve context data from errors
 
@@ -26,6 +26,7 @@ This allows you to treat errors as values so you can write more safe, readable, 
     - [`get` Method](#get-method)
     - [`getAll` Method](#getall-method)
     - [`fmtErr` Method](#fmterr-method)
+  - [`errWithCtx` Function](#errwithctx-function)
 - [Example](#example)
 
 ## Installation
@@ -104,7 +105,7 @@ As an alternative, there are many other libraries available that are inspired by
 - [badrap/result](https://github.com/badrap/result)
 - [everweij/typescript-result](https://github.com/everweij/typescript-result)
 
-However, these libraries tend to be considerably more complex and have a much larger API surface. In contrast, `ts-explicit-errors` is only ~60 lines of code.
+However, these libraries tend to be considerably more complex and have a much larger API surface. In contrast, `ts-explicit-errors` is only ~70 lines of code.
 
 ## API
 
@@ -363,6 +364,31 @@ console.log(topError.fmtErr())
 // With the optional message given
 console.log(topError.fmtErr("something went wrong"))
 // "something went wrong -> failed to process request -> failed to do the thing -> failed to connect to database"
+```
+
+---
+
+### `errWithCtx` Function
+
+```ts
+function errWithCtx(defaultContext: Record<string, unknown>): (message: string, cause?: unknown) => CtxError
+```
+
+Creates a [`err`](#err-function) function with predefined context. This is useful when you want to create multiple errors with the same context, such as a common scope or component name.
+
+```ts
+const serviceErr = errWithCtx({ scope: "userService" })
+
+function getUserById(id: number): Result<User> {
+  const result = attempt(() => db.findUser(id))
+
+  // No need to manually add the scope context every time
+  if (isErr(result)) return serviceErr("failed to find user", result)
+
+  return result
+}
+
+// The error will automatically have { scope: "userService" } in its context
 ```
 
 ---
