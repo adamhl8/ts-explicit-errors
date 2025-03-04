@@ -116,6 +116,7 @@ In an effort to keep the API concise, `ts-explicit-errors` only exports a few th
 - `attempt` Function
 - `err` Function
   - The `CtxError` Class is also exported but should generally be accessed via `err`
+- `errWithCtx` Function
 
 ---
 
