@@ -34,7 +34,7 @@
   ],
   "scripts": {
     "bundle": "bun lint && rm -rf dist && bun build.ts",
-    "lint": "tsc --noEmit && biome check --write"
+    "lint": "tsc --noEmit && biome check --write && bun test"
   },
   "dependencies": {},
   "devDependencies": {
