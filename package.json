@@ -38,12 +38,10 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@adamhl8/configs": "^0.3.0",
+    "@biomejs/biome": "^2.0.6",
     "@types/bun": "^1.2.4",
     "bun-plugin-isolated-decl": "^0.1.9",
-    "eslint": "^9.21.0",
-    "eslint-config-builder": "^0.19.1",
-    "prettier": "^3.5.3",
-    "typescript": "^5.8.2",
-    "typescript-eslint": "^8.26.0"
+    "typescript": "^5.8.2"
   }
 }
