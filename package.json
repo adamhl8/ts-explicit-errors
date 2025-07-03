@@ -23,18 +23,13 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": [
-    "dist/"
-  ],
-  "keywords": [
-    "error",
-    "typescript",
-    "error handling",
-    "result"
-  ],
+  "files": ["dist/"],
+  "keywords": ["error", "typescript", "error handling", "result"],
   "scripts": {
-    "bundle": "bun lint && rm -rf dist && bun build.ts",
-    "lint": "tsc --noEmit && biome check --write && bun test"
+    "bundle": "rm -rf ./dist && bun lint && tsc && tsc-alias",
+    "lint": "tsc --noEmit && biome check --write && bun test",
+    "prepare": "find .githooks -type f -exec ln -srf {} .git/hooks/ \\;",
+    "prepublishOnly": "bun bundle"
   },
   "dependencies": {},
   "devDependencies": {
