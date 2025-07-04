@@ -23,15 +23,8 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": [
-    "dist/"
-  ],
-  "keywords": [
-    "error",
-    "typescript",
-    "error handling",
-    "result"
-  ],
+  "files": ["dist/"],
+  "keywords": ["error", "typescript", "error handling", "result"],
   "scripts": {
     "bundle": "rm -rf ./dist && bun lint && tsc && tsc-alias",
     "lint": "tsc --noEmit && biome check --write && bun test",
