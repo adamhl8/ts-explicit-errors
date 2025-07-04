@@ -23,8 +23,15 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist/"],
-  "keywords": ["error", "typescript", "error handling", "result"],
+  "files": [
+    "dist/"
+  ],
+  "keywords": [
+    "error",
+    "typescript",
+    "error handling",
+    "result"
+  ],
   "scripts": {
     "bundle": "rm -rf ./dist && bun lint && tsc && tsc-alias",
     "lint": "tsc --noEmit && biome check --write && bun test",
@@ -33,7 +40,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@adamhl8/configs": "^0.8.1",
+    "@adamhl8/configs": "^0.8.2",
     "@biomejs/biome": "^2.0.6",
     "@types/bun": "^1.2.18",
     "tsc-alias": "^1.8.16",
