@@ -1,9 +1,11 @@
-import type { CtxError, Result } from "../index.ts"
-
+/** biome-ignore-all lint/style/useThrowOnlyError: for tests */
+/** biome-ignore-all lint/suspicious/useErrorMessage: for tests */
+/** biome-ignore-all lint/suspicious/useAwait: for tests */
 import { describe, expect, spyOn, test } from "bun:test"
 
-import { attempt, err, errWithCtx, isErr } from "../index.ts"
-import { db, exampleMainWrapper } from "./example.ts"
+import { db, exampleMainWrapper } from "@/__tests__/example.js"
+import type { CtxError, Result } from "@/index.js"
+import { attempt, err, errWithCtx, isErr } from "@/index.js"
 
 class CustomError extends Error {
   public constructor(message: string) {
@@ -21,6 +23,7 @@ const throwsString = () => {
 }
 
 function expectErr<T>(result: Result<T>): asserts result is CtxError {
+  // biome-ignore lint/suspicious/noMisplacedAssertion: wrapper function
   expect(isErr(result)).toBe(true)
 }
 
@@ -126,7 +129,6 @@ describe("CtxError", () => {
     })
 
     test("excludes blank error messages", () => {
-      // eslint-disable-next-line unicorn/error-message
       const blankError = new Error("")
       const error = err("Base message", blankError)
 
@@ -134,7 +136,6 @@ describe("CtxError", () => {
     })
 
     test("shows 'Unknown error' when all messages are blank", () => {
-      // eslint-disable-next-line unicorn/error-message
       const blankError = new Error("")
       const error = err("", blankError)
 
@@ -174,7 +175,6 @@ describe("CtxError", () => {
         zero: 0,
         empty: "",
         falseValue: false,
-        // eslint-disable-next-line unicorn/no-null
         nullValue: null,
         undefinedValue: undefined,
       })
@@ -182,9 +182,7 @@ describe("CtxError", () => {
       expect(error.get<number>("zero")).toBe(0)
       expect(error.get<string>("empty")).toBe("")
       expect(error.get<boolean>("falseValue")).toBe(false)
-      // eslint-disable-next-line unicorn/no-null
       expect(error.get<null>("nullValue")).toBe(null)
-      // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
       expect(error.get<undefined>("undefinedValue")).toBeUndefined()
     })
 
@@ -225,7 +223,6 @@ describe("CtxError", () => {
         zero: 0,
         empty: "",
         falseValue: false,
-        // eslint-disable-next-line unicorn/no-null
         nullValue: null,
         undefinedValue: undefined,
       })
@@ -233,7 +230,6 @@ describe("CtxError", () => {
       expect(error.getAll("zero")).toEqual([0])
       expect(error.getAll("empty")).toEqual([""])
       expect(error.getAll("falseValue")).toEqual([false])
-      // eslint-disable-next-line unicorn/no-null
       expect(error.getAll("nullValue")).toEqual([null])
       expect(error.getAll("undefinedValue")).toEqual([undefined])
     })

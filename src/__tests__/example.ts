@@ -1,14 +1,11 @@
-import type { Result } from "../index.ts"
+import type { Result } from "@/index.js"
+import { attempt, err, isErr } from "@/index.js"
 
-import { attempt, err, isErr } from "../index.ts"
-
-// For testing purpose, these functions will do nothing by default and we'll mock them in the test
+// For testing purposes, these functions will do nothing by default and we'll mock them in the test
 const db = {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   connect: (_dbId: string) => {
     void 0
   },
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion, @typescript-eslint/no-unused-vars
   query: ((_queryString: string) => {
     void 0
   }) as unknown as (queryString: string) => Promise<string>,
@@ -30,7 +27,6 @@ async function queryDb(queryString: string): Promise<Result<string>> {
     return connectToDbError
   }
 
-  // eslint-disable-next-line @typescript-eslint/promise-function-async
   const queryResult = await attempt(() => db.query(queryString))
   if (isErr(queryResult)) {
     return err("failed to query db", queryResult).ctx({ queryString, logScope: "query", timestamp: "<timestamp2>" })
@@ -48,7 +44,6 @@ async function main(): Promise<Result<string>> {
   return meetingsQueryResult
 }
 
-// eslint-disable-next-line jsdoc/require-jsdoc
 async function exampleMainWrapper() {
   // wrapped so we can export for use in the tests
   const result = await main()

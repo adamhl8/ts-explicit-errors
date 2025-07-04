@@ -40,17 +40,15 @@ class CtxError extends Error {
    * @param key The key to look up in the context
    * @returns The context value if found, or `undefined` if not found
    */
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
   public get<T>(key: string): T | undefined {
     if (this.cause instanceof CtxError) {
       const deepestValue = this.cause.get<T>(key)
       if (deepestValue !== undefined) return deepestValue
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     if (this.context && Object.hasOwn(this.context, key)) return this.context[key] as T
 
-    return undefined
+    return
   }
 
   /**
@@ -63,13 +61,12 @@ class CtxError extends Error {
    * @returns An array of all context values found for the given key
    */
   public getAll<T>(key: string): T[] {
-    const values = []
+    const values: unknown[] = []
 
     if (this.context && Object.hasOwn(this.context, key)) values.push(this.context[key])
 
     if (this.cause instanceof CtxError) values.push(...this.cause.getAll(key))
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     return values as T[]
   }
 
@@ -92,7 +89,6 @@ class CtxError extends Error {
         const prefix = shouldShowName ? `${currentCause.name}: ` : ""
         const causeMessage = `${prefix}${currentCause.message}`
         messages.push(causeMessage)
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
       } else messages.push(currentCause.toString())
 
       currentCause = currentCause instanceof Error ? currentCause.cause : undefined
@@ -130,9 +126,9 @@ function isErr<T>(result: Result<T>): result is CtxError {
  * @param value The value to check
  * @returns `true` if the value is a Promise (more specifically, a thenable)
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+// biome-ignore lint/suspicious/noExplicitAny: we can't use 'unknown' here
 function isPromise(value: any): value is Promise<any> {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   return value ? typeof value.then === "function" : false
 }
 
