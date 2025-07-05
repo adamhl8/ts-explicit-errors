@@ -28,7 +28,7 @@
   "scripts": {
     "bundle": "rm -rf ./dist && bun lint && tsc -p tsconfig.build.json && tsc-alias",
     "lint": "tsc --noEmit && biome check --write && bun test",
-    "prepare": "find .githooks -type f -exec ln -srf {} .git/hooks/ \\;",
+    "prepare": "find .githooks -type f -exec ln -srf {} .git/hooks/ \\; || true",
     "prepublishOnly": "bun bundle"
   },
   "dependencies": {},
