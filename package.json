@@ -26,7 +26,7 @@
   "files": ["dist/"],
   "keywords": ["error", "typescript", "error handling", "result"],
   "scripts": {
-    "bundle": "rm -rf ./dist && bun lint && tsc && tsc-alias",
+    "bundle": "rm -rf ./dist && bun lint && tsc -p tsconfig.build.json && tsc-alias",
     "lint": "tsc --noEmit && biome check --write && bun test",
     "prepare": "find .githooks -type f -exec ln -srf {} .git/hooks/ \\;",
     "prepublishOnly": "bun bundle"
