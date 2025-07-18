@@ -41,7 +41,7 @@ bun add ts-explicit-errors
 
 ## Usage
 
-Use the [`attempt` function](#attempt-function) to handle potential thrown errors from code you don't control:
+Use the `attempt` function to handle potential thrown errors from code you don't control:
 
 ```ts
 import { attempt } from "ts-explicit-errors"
@@ -57,9 +57,10 @@ import { attempt, err, isErr } from "ts-explicit-errors"
 
 // in some function...
 const config = attempt(() => fs.readFileSync("config.json"))
-if (isErr(config)) return err("failed to read config file", config) // we pass 'config' (which we know is an error here) as the cause
+if (isErr(config)) return err("failed to read config file", config)
+// we pass 'config' (which we know is an error here) as the cause
 
-console.log(`Config: ${config}`) // 'config' is no longer an error
+console.log(`Config: ${config}`) // if we got here, 'config' is no longer an error
 ```
 
 Throughout your codebase, your functions should return a `Result`, which is either the value or an error:
