@@ -69,12 +69,13 @@ import type { Result } from "ts-explicit-errors"
 import { attempt, err, isErr } from "ts-explicit-errors"
 
 function getConfig(): Result<string> {
-  const config = attempt(() => fs.readFileSync("config.json"))
-  if (isErr(config)) return err("failed to read config file", config)
+  const rawConfig = attempt(() => fs.readFileSync("config.json"))
+  if (isErr(rawConfig)) return err("failed to read config file", rawConfig)
 
-  // you would probably parse the config here
+  const parsedConfig = attempt(() => JSON.parse(rawConfig))
+  if (isErr(parsedConfig)) return err("failed to parse config", parsedConfig)
 
-  return config
+  return parsedConfig
 }
 ```
 
@@ -85,7 +86,9 @@ At some point, you'll want to handle the error chain. Use `messageChain` to log 
 
 const config = getConfig()
 if (isErr(config)) {
-  console.error(config.messageChain) // failed to read config file -> ENOENT: no such file or directory, open 'config.json'
+  console.error(config.messageChain)
+  // (if 'fs.readFileSync' failed): failed to read config file -> ENOENT: no such file or directory, open 'config.json'
+  // (if 'JSON.parse' failed):      failed to parse config -> SyntaxError: JSON Parse error
   process.exit(1)
 }
 
