@@ -2,7 +2,7 @@
   "name": "ts-explicit-errors",
   "version": "3.0.0",
   "type": "module",
-  "description": "A concise and type-safe error handling library for TypeScript",
+  "description": "A TypeScript error handling library for treating errors as values",
   "repository": {
     "type": "git",
     "url": "https://github.com/adamhl8/ts-explicit-errors"
