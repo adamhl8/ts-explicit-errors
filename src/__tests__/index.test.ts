@@ -4,8 +4,8 @@
 import { describe, expect, spyOn, test } from "bun:test"
 
 import { db, exampleMainWrapper } from "@/__tests__/example.js"
-import type { CtxError, Result } from "@/index.js"
-import { attempt, err, errWithCtx, isErr } from "@/index.js"
+import type { Result } from "@/index.js"
+import { attempt, CtxError, err, errWithCtx, isErr } from "@/index.js"
 
 class CustomError extends Error {
   public constructor(message: string) {
@@ -42,7 +42,7 @@ describe("attempt", () => {
 
     expectErr(result)
 
-    expect(result.fmtErr()).toBe("sync error")
+    expect(result.messageChain).toBe("sync error")
   })
 
   test("handles successful async operations", async () => {
@@ -59,53 +59,76 @@ describe("attempt", () => {
 
     expectErr(result)
 
-    expect(result.fmtErr()).toBe("async error")
+    expect(result.messageChain).toBe("async error")
   })
 
   test("handles non-Error throws", () => {
     const result = attempt(() => {
       throwsString()
     })
-
     expectErr(result)
+    expect(result.messageChain).toBe("string error")
 
-    expect(result.fmtErr()).toBe("string error")
+    const nullResult = attempt(() => {
+      throw null
+    })
+    expectErr(nullResult)
+    expect(nullResult.messageChain).toBe("null")
+
+    const undefinedResult = attempt(() => {
+      throw undefined
+    })
+    expectErr(undefinedResult)
+    expect(undefinedResult.messageChain).toBe("undefined")
   })
 })
 
-describe("CtxError", () => {
-  describe("fmtErr", () => {
-    test("formats basic error message", () => {
+describe("CtxError (constructor)", () => {
+  test("correctly extends Error and assigns properties", () => {
+    const cause = new Error("Cause message")
+    const error = new CtxError("Base message", { cause })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error.name).toBe("CtxError")
+    expect(error.message).toBe("Base message")
+    expect(error.cause).toBe(cause)
+  })
+
+  test("correctly converts an Error", () => {
+    const cause = new Error("Cause message")
+    const errorToConvert = new Error("Base message", { cause })
+    const error = new CtxError("should be overridden", {}, errorToConvert)
+    error.stack = "<stack>"
+
+    expect(error.name).toBe("Error")
+    expect(error.message).toBe("Base message")
+    expect(error.cause).toBe(cause)
+    expect(error.stack).toBe("<stack>")
+  })
+})
+
+describe("err", () => {
+  describe("messageChain", () => {
+    test("equals message for a single error", () => {
       const error = err("Base message")
 
-      expect(error.fmtErr()).toBe("Base message")
+      expect(error.messageChain).toBe("Base message")
+      expect(error.messageChain).toBe(error.message)
     })
 
-    test("prepends message if provided", () => {
-      const error = err("Base message")
-
-      expect(error.fmtErr("prepend message")).toBe("prepend message -> Base message")
-    })
-
-    test("formats error with cause", () => {
+    test("handles an error with a cause", () => {
       const cause = new Error("Cause message")
       const error = err("Base message", cause)
 
-      expect(error.fmtErr()).toBe("Base message -> Cause message")
+      expect(error.messageChain).toBe("Base message -> Cause message")
     })
 
-    test("formats error with nested causes", () => {
+    test("handles an error with nested causes", () => {
       const deepCause = new Error("Deep cause")
       const middleCause = new Error("Middle cause", { cause: deepCause })
       const error = err("Base message", middleCause)
 
-      expect(error.fmtErr()).toBe("Base message -> Middle cause -> Deep cause")
-    })
-
-    test("handles non-Error causes", () => {
-      const error = err("Base message", "string cause")
-
-      expect(error.fmtErr()).toBe("Base message -> string cause")
+      expect(error.messageChain).toBe("Base message -> Middle cause -> Deep cause")
     })
 
     test("includes custom error names in message and excludes Error and CtxError prefixes", () => {
@@ -117,29 +140,82 @@ describe("CtxError", () => {
       const error2 = err("Base message", ctxError)
       const error3 = err("Base message", customError)
 
-      expect(error1.fmtErr()).toBe("Base message -> Error message")
-      expect(error2.fmtErr()).toBe("Base message -> CtxError message")
-      expect(error3.fmtErr()).toBe("Base message -> CustomError: CustomError message")
-    })
-
-    test("handles falsy cause", () => {
-      const error = err("Base message", "")
-
-      expect(error.fmtErr()).toBe("Base message")
+      expect(error1.messageChain).toBe("Base message -> Error message")
+      expect(error2.messageChain).toBe("Base message -> CtxError message")
+      expect(error3.messageChain).toBe("Base message -> CustomError: CustomError message")
     })
 
     test("excludes blank error messages", () => {
       const blankError = new Error("")
       const error = err("Base message", blankError)
 
-      expect(error.fmtErr("")).toBe("Base message")
+      expect(error.messageChain).toBe("Base message")
     })
 
     test("shows 'Unknown error' when all messages are blank", () => {
       const blankError = new Error("")
       const error = err("", blankError)
 
-      expect(error.fmtErr("")).toBe("Unknown error")
+      expect(error.messageChain).toBe("Unknown error")
+    })
+  })
+
+  describe("rootStack", () => {
+    test("equals the stack of the last error in the chain", () => {
+      const deepCause = new Error("Deep cause")
+      deepCause.stack = "Deep stack"
+      const middleCause = new Error("Middle cause", { cause: deepCause })
+      const error = err("Base message", middleCause)
+
+      expect(error.rootStack).toBe("Deep stack")
+      expect(error.rootStack).toBe(deepCause.stack)
+
+      const error2 = err("Base message")
+      error2.stack = "Base stack"
+
+      expect(error2.rootStack).toBe("Base stack")
+      expect(error2.rootStack).toBe(error2.stack)
+    })
+
+    test("handles a blank/undefined stack", () => {
+      const deepCause = new Error("Deep cause")
+      deepCause.stack = ""
+      const middleCause = new Error("Middle cause", { cause: deepCause })
+      middleCause.stack = "Middle stack"
+      const error = err("Base message", middleCause)
+
+      expect(error.rootStack).toBe("Middle stack")
+      expect(error.rootStack).toBe(middleCause.stack)
+    })
+
+    test("shows '<no stack>' when all stacks are blank", () => {
+      const error = err("Base message")
+      error.stack = ""
+
+      expect(error.rootStack).toBe("<no stack>")
+    })
+
+    test("cleans the root stack", () => {
+      const error = err("Base message")
+      const stackLength = error.stack?.split("\n").length ?? 0
+      const rootStackLength = error.rootStack.split("\n").length
+
+      expect(error.stack).toContain("at err")
+      expect(error.stack).toContain("at new CtxError")
+      expect(error.rootStack).not.toContain("at new CtxError")
+      expect(error.rootStack).not.toContain("at err")
+      expect(rootStackLength).toBe(stackLength - 2)
+
+      const attemptError = attempt(() => {
+        throwsError()
+      })
+      expectErr(attemptError)
+      const attemptErrorStackLength = attemptError.stack?.split("\n").length ?? 0
+      const attemptErrorRootStackLength = attemptError.rootStack.split("\n").length
+
+      expect(attemptError.stack).toContain("at attempt")
+      expect(attemptError.rootStack).not.toContain("at attempt")
+      expect(attemptErrorRootStackLength).toBe(attemptErrorStackLength - 1)
     })
   })
 
@@ -186,7 +262,7 @@ describe("CtxError", () => {
       expect(error.get<undefined>("undefinedValue")).toBeUndefined()
     })
 
-    test("retrieves values from cause chain", () => {
+    test("retrieves values from error chain", () => {
       const deepError = err("Deep error").ctx({ deepKey: "foo" })
       const middleError = err("Middle error", deepError).ctx({ middleKey: "bar" })
       const topError = err("Top error", middleError).ctx({ topKey: "baz" })
@@ -234,7 +310,7 @@ describe("CtxError", () => {
       expect(error.getAll("undefinedValue")).toEqual([undefined])
     })
 
-    test("retrieves values from cause chain", () => {
+    test("retrieves values from error chain", () => {
       const deepError = err("Deep error").ctx({ deepKey: "foo" })
       const middleError = err("Middle error", deepError).ctx({ middleKey: "bar" })
       const topError = err("Top error", middleError).ctx({ topKey: "baz" })
@@ -269,7 +345,7 @@ describe("errWithCtx", () => {
 
     expectErr(error)
 
-    expect(error.fmtErr()).toBe("Base message")
+    expect(error.messageChain).toBe("Base message")
     expect(error.context).toEqual({ scope: "foo" })
   })
 
@@ -280,7 +356,7 @@ describe("errWithCtx", () => {
 
     expectErr(error)
 
-    expect(error.fmtErr()).toBe("Base message -> cause message")
+    expect(error.messageChain).toBe("Base message -> cause message")
     expect(error.cause).toBe(cause)
     expect(error.context).toEqual({ scope: "foo" })
   })
@@ -291,7 +367,7 @@ describe("errWithCtx", () => {
 
     expectErr(error)
 
-    expect(error.fmtErr()).toBe("Base message")
+    expect(error.messageChain).toBe("Base message")
     expect(error.context).toEqual({ scope: "foo", bar: 123 })
   })
 
@@ -304,7 +380,7 @@ describe("errWithCtx", () => {
 
     expectErr(barError)
 
-    expect(barError.fmtErr()).toBe("bar error -> foo error")
+    expect(barError.messageChain).toBe("bar error -> foo error")
     expect(barError.getAll("scope")).toEqual(["bar", "foo"])
   })
 })
@@ -317,7 +393,7 @@ describe("integration", () => {
 
     expectErr(result)
 
-    expect(result.fmtErr("Operation failed")).toBe("Operation failed -> Original error")
+    expect(result.messageChain).toBe("Original error")
   })
 
   test("handles nested error chains", async () => {
@@ -330,7 +406,7 @@ describe("integration", () => {
 
     expectErr(result)
 
-    expect(result.fmtErr("Top error")).toBe("Top error -> Middle error -> Deep error")
+    expect(result.messageChain).toBe("Middle error -> Deep error")
   })
 
   test("complete example", async () => {

@@ -1,6 +1,6 @@
 {
   "name": "ts-explicit-errors",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "type": "module",
   "description": "A concise and type-safe error handling library for TypeScript",
   "repository": {
@@ -20,28 +20,20 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/types/index.d.ts"
     }
   },
-  "files": [
-    "dist/"
-  ],
-  "keywords": [
-    "error",
-    "typescript",
-    "error handling",
-    "result"
-  ],
+  "files": ["dist/"],
+  "keywords": ["error", "typescript", "error handling", "result"],
   "scripts": {
     "bundle": "rm -rf ./dist && bun lint && tsc -p tsconfig.build.json && tsc-alias",
     "lint": "tsc --noEmit && biome check --write && bun test",
     "prepare": "find .githooks -type f -exec ln -srf {} .git/hooks/ \\; || true",
     "prepublishOnly": "bun bundle"
   },
-  "dependencies": {},
   "devDependencies": {
-    "@adamhl8/configs": "^0.9.1",
-    "@biomejs/biome": "^2.1.1",
+    "@adamhl8/configs": "^0.9.2",
+    "@biomejs/biome": "^2.1.2",
     "@types/bun": "^1.2.18",
     "tsc-alias": "^1.8.16",
     "typescript": "^5.8.3"

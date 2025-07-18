@@ -1,20 +1,171 @@
 type DefaultContext = Record<string, unknown>
 
 /**
+ * Represents a value or a {@link CtxError}.
+ *
+ * The main idea is that **when you would normally write a function that returns `T`, you should instead return `Result<T>`.**
+ *
+ * - If your function doesn't return anything (i.e. `undefined`) other than an error, you can use `Result` without a type argument since `void` is the default
+ */
+export type Result<T = void> = T | CtxError
+
+/**
+ * Checks if a value is an instance of {@link CtxError}.
+ *
+ * - This is a wrapper around `result instanceof CtxError` to make type narrowing more concise
+ *
+ * @param result The value to check
+ * @returns `true` if the value is an instance of {@link CtxError}, otherwise `false`
+ */
+export function isErr<T>(result: Result<T>): result is CtxError {
+  return result instanceof CtxError
+}
+
+/**
+ * Executes a function, _catches any errors thrown_, and returns a {@link Result}.
+ *
+ * **It is generally used for functions that _you don't control_ which might throw an error**.
+ *
+ * - Use `attempt` to "force" functions to return a `Result` so error handling remains consistent
+ * - Another way to think about this is that `attempt` should be used as far down the call stack as possible so that thrown errors are handled at their source
+ *
+ * @param fn The function to execute
+ * @returns A {@link Result}
+ */
+export function attempt<T>(fn: () => Promise<T>): Promise<Result<T>>
+export function attempt<T>(fn: () => T): Result<T>
+export function attempt<T>(fn: () => Promise<T> | T) {
+  const convertUnknownErrorToCtxError = (error: unknown) => {
+    const newError = error instanceof Error ? error : new Error(String(error))
+    return new CtxError("", {}, newError)
+  }
+
+  try {
+    const result = fn()
+    return isPromise(result)
+      ? result.then((value) => value).catch((error: unknown) => convertUnknownErrorToCtxError(error))
+      : result
+  } catch (error) {
+    return convertUnknownErrorToCtxError(error)
+  }
+}
+
+/**
+ * Takes a message and a cause (optional) and returns a new {@link CtxError}.
+ *
+ * - This is a wrapper around `new CtxError()` to make creating errors more concise
+ *
+ * @param message The error message
+ * @param cause The cause of the error (optional)
+ * @returns A new {@link CtxError}
+ */
+export function err(message: string, cause?: Error): CtxError {
+  return cause ? new CtxError(message, { cause }) : new CtxError(message)
+}
+
+/**
  * A custom error class that extends the built-in {@link Error} class with additional functionality.
  *
  * - All instances of `CtxError` are instances of `Error`, so using them in place of `Error` won't cause any issues.
  */
-class CtxError extends Error {
+export class CtxError extends Error {
+  // Note that we enforce the `Error` type for many properties, arguments, etc. That way the error chain is always a chain of `Error` or `CtxError` (since `CtxError` extends `Error`).
+
+  /** The context object of the error. */
   public context?: DefaultContext
+  /** The cause of the error. */
+  public override cause?: Error // On a normal `Error`, `cause` is of type `unknown`. We explicitly want the `cause` on a `CtxError` to be an `Error`.
 
-  public constructor(message: string, options?: { cause?: unknown; context?: DefaultContext }) {
-    super(message, { cause: options?.cause })
-    this.name = "CtxError"
-
-    if (options?.context) this.context = { ...options.context }
-
+  public constructor(
+    message: string,
+    options?: {
+      cause?: Error
+    },
+    /**
+     * When the `attempt` function is used, we pass in the original error that was thrown so we can copy its properties onto a new `CtxError` instance.
+     * - Passing this argument will cause the `message` and `options` properties to be ignored.
+     */
+    errorToConvert?: Error,
+  ) {
+    super()
     Object.setPrototypeOf(this, new.target.prototype)
+
+    if (errorToConvert) {
+      this.name = errorToConvert.name
+      this.message = errorToConvert.message
+      if (errorToConvert.cause instanceof Error) this.cause = errorToConvert.cause
+      if (errorToConvert.stack) this.stack = errorToConvert.stack
+    } else {
+      this.name = "CtxError"
+      this.message = message
+      if (options?.cause) this.cause = options.cause
+    }
+  }
+
+  /**
+   * The full error message, which contains all of the error messages in the error chain (this error and all its causes).
+   *
+   * - This is formatted as: `cause1 -> cause2 -> ... -> causeN`
+   */
+  public get messageChain(): string {
+    const messages = [this.message]
+    let currentCause = this.cause
+
+    while (currentCause) {
+      const causeMessage = this.#prependErrorNameToMessage(currentCause)
+      messages.push(causeMessage)
+      currentCause = currentCause.cause instanceof Error ? currentCause.cause : undefined
+    }
+
+    const filteredMessages = messages.map((msg) => msg.trim()).filter(Boolean)
+    const messageChain = filteredMessages.length > 0 ? filteredMessages.join(" -> ") : "Unknown error"
+
+    return messageChain
+  }
+
+  /**
+   *
+   * Prepends the error name to the error message if it's not 'Error' or 'CtxError'.
+   *
+   * @param error The error
+   * @returns The error message
+   */
+  #prependErrorNameToMessage(error: Error): string {
+    const shouldShowName = error.name !== "Error" && error.name !== "CtxError"
+    const prefix = shouldShowName ? `${error.name}: ` : ""
+    const errorMessage = `${prefix}${error.message}`
+    return errorMessage
+  }
+
+  /**
+   * The stack trace of the error chain.
+   *
+   * **Note:** This is the stack trace from the last/deepest error in the chain. This is probably what you want since this gives you the full stack trace of the error chain.
+   * - If you want the stack trace of the current error, use `stack`.
+   */
+  public get rootStack() {
+    const cleanStack = (stack: string) => {
+      const stackLines = stack.trim().split("\n")
+
+      const excludes = ["at new CtxError", "at err", "at attempt"]
+      const cleanedLines = stackLines
+        .map((line) => line.trim())
+        .filter((line) => !excludes.some((exclude) => line.startsWith(exclude)))
+      return cleanedLines.join("\n    ")
+    }
+
+    const stacks = [this.stack]
+    let currentCause = this.cause
+
+    while (currentCause) {
+      stacks.push(currentCause.stack)
+      currentCause = currentCause.cause instanceof Error ? currentCause.cause : undefined
+    }
+
+    const filteredStacks = stacks.map((stack) => (stack ? stack.trim() : "")).filter(Boolean)
+    const rootStack = filteredStacks.at(-1)
+
+    return rootStack ? cleanStack(rootStack) : "<no stack>"
   }
 
   /**
@@ -69,102 +220,6 @@ class CtxError extends Error {
 
     return values as T[]
   }
-
-  /**
-   * Returns a nicely formatted error message by unwrapping all error messages in the error chain (this error and all its causes).
-   *
-   * - The error message is formatted as: `message -> cause1 -> cause2 -> ... -> causeN`
-   * - An optional message can be provided which will be the first message in the string
-   *
-   * @param message The message to prepend to the error message (optional)
-   * @returns A formatted error message string
-   */
-  public fmtErr(message?: string): string {
-    const messages = [message, this.message]
-    let currentCause = this.cause
-    // Unwrap all nested error messages
-    while (currentCause) {
-      if (currentCause instanceof Error) {
-        const shouldShowName = currentCause.name !== "Error" && currentCause.name !== "CtxError"
-        const prefix = shouldShowName ? `${currentCause.name}: ` : ""
-        const causeMessage = `${prefix}${currentCause.message}`
-        messages.push(causeMessage)
-      } else messages.push(currentCause.toString())
-
-      currentCause = currentCause instanceof Error ? currentCause.cause : undefined
-    }
-
-    const filteredMessages = messages.filter((msg) => msg?.trim())
-    const errorMessage = filteredMessages.length > 0 ? filteredMessages.join(" -> ") : "Unknown error"
-
-    return errorMessage
-  }
-}
-
-/**
- * Represents a value or a {@link CtxError}.
- *
- * The main idea is that **when you would normally write a function that returns `T`, you should instead return `Result<T>`.**
- *
- * - If your function doesn't return anything (i.e. `undefined`) other than an error, you can use `Result` without a type argument since `void` is the default
- */
-type Result<T = void> = T | CtxError
-
-/**
- * Checks if a value is an instance of {@link CtxError}.
- *
- * - This is a wrapper around `result instanceof CtxError` to make type narrowing more concise
- *
- * @param result The value to check
- * @returns `true` if the value is an instance of {@link CtxError}, otherwise `false`
- */
-function isErr<T>(result: Result<T>): result is CtxError {
-  return result instanceof CtxError
-}
-
-/**
- * @param value The value to check
- * @returns `true` if the value is a Promise (more specifically, a thenable)
- */
-
-// biome-ignore lint/suspicious/noExplicitAny: we can't use 'unknown' here
-function isPromise(value: any): value is Promise<any> {
-  return value ? typeof value.then === "function" : false
-}
-
-/**
- * Executes a function, _catches any errors thrown_, and returns a {@link Result}.
- *
- * **It is generally used for functions that _you don't control_ which might throw an error**.
- *
- * - Use `attempt` to "force" functions to return a `Result` so error handling remains consistent
- * - Another way to think about this is that `attempt` should be used as far down the call stack as possible so that thrown errors are handled at their source
- *
- * @param fn The function to execute
- * @returns A {@link Result}
- */
-function attempt<T>(fn: () => Promise<T>): Promise<Result<T>>
-function attempt<T>(fn: () => T): Result<T>
-function attempt<T>(fn: () => Promise<T> | T) {
-  try {
-    const result = fn()
-    return isPromise(result) ? result.then((value) => value).catch((error: unknown) => err("", error)) : result
-  } catch (error) {
-    return err("", error)
-  }
-}
-
-/**
- * Takes a message and a cause (optional) and returns a new {@link CtxError}.
- *
- * - This is a wrapper around `new CtxError()` to make creating errors more concise
- *
- * @param message The error message
- * @param cause The cause of the error (optional)
- * @returns A new {@link CtxError}
- */
-function err(message: string, cause?: unknown): CtxError {
-  return new CtxError(message, { cause })
 }
 
 /**
@@ -183,9 +238,15 @@ function err(message: string, cause?: unknown): CtxError {
  * @param defaultContext The default context to attach to all errors created by this function
  * @returns A `err` function with predefined context
  */
-function errWithCtx(defaultContext: DefaultContext) {
-  return (message: string, cause?: unknown): CtxError => err(message, cause).ctx(defaultContext)
+export function errWithCtx(defaultContext: DefaultContext) {
+  return (message: string, cause?: Error): CtxError => err(message, cause).ctx(defaultContext)
 }
 
-export { attempt, CtxError, err, errWithCtx, isErr }
-export type { Result }
+/**
+ * @param value The value to check
+ * @returns `true` if the value is a Promise (more specifically, a thenable)
+ */
+// biome-ignore lint/suspicious/noExplicitAny: we can't use 'unknown' here
+function isPromise(value: any): value is Promise<any> {
+  return value ? typeof value.then === "function" : false
+}

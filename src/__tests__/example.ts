@@ -54,7 +54,7 @@ async function exampleMainWrapper() {
       queryString: result.get<string>("queryString") ?? "",
     }
 
-    return fakeLogger.error(result.fmtErr("something went wrong"), fullContext)
+    return fakeLogger.error(`something went wrong -> ${result.messageChain}`, fullContext)
   } // else console.log(result)
   return ""
 }

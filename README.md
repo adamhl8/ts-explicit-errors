@@ -3,15 +3,15 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/ts-explicit-errors.svg)](https://www.npmjs.com/package/ts-explicit-errors)
 
-A concise and type-safe error handling library for TypeScript that provides explicit error handling with added support for error context.
+A concise and type-safe error handling library for TypeScript that allows you to treat errors as values so you can write more safe, readable, and maintainable code.
 
-- Zero dependencies (the whole library is only ~70 LoC)
+- Zero dependencies (the whole library is only ~100 LoC)
 - Small, easy to understand API
 - Attach and retrieve context data from errors
 
-This allows you to treat errors as values so you can write more safe, readable, and maintainable code.
-
 ---
+
+<!-- toc -->
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -22,12 +22,15 @@ This allows you to treat errors as values so you can write more safe, readable, 
   - [`attempt` Function](#attempt-function)
   - [`err` Function](#err-function)
   - [`CtxError` Class](#ctxerror-class)
+    - [`messageChain`](#messagechain)
+    - [`rootStack`](#rootstack)
     - [`ctx` Method](#ctx-method)
     - [`get` Method](#get-method)
     - [`getAll` Method](#getall-method)
-    - [`fmtErr` Method](#fmterr-method)
   - [`errWithCtx` Function](#errwithctx-function)
 - [Example](#example)
+
+<!-- tocstop -->
 
 ## Installation
 
@@ -38,54 +41,81 @@ bun add ts-explicit-errors
 
 ## Usage
 
-```ts
-import type { Result } from "ts-explicit-errors"
+Use the [`attempt` function](#attempt-function) to handle potential thrown errors from code you don't control:
 
+```ts
+import { attempt } from "ts-explicit-errors"
+
+const config = attempt(() => fs.readFileSync("config.json"))
+// config is either the value or an error
+```
+
+Handle the result:
+
+```ts
 import { attempt, err, isErr } from "ts-explicit-errors"
 
-function getUserById(id: number): Result<User> {
-  // Use the attempt function to handle potential thrown errors from external code
-  const result = attempt(() => db.findUser(id))
-  // pretend that db.findUser throws an Error with the message: "failed to connect to database"
+// in some function...
+const config = attempt(() => fs.readFileSync("config.json"))
+if (isErr(config)) return err("failed to read config file", config) // we pass 'config' (which we know is an error here) as the cause
 
-  if (isErr(result)) return err("failed to find user", result)
+console.log(`Config: ${config}`) // 'config' is no longer an error
+```
 
-  return result
+Throughout your codebase, your functions should return a `Result`, which is either the value or an error:
+
+```ts
+import type { Result } from "ts-explicit-errors"
+import { attempt, err, isErr } from "ts-explicit-errors"
+
+function getConfig(): Result<string> {
+  const config = attempt(() => fs.readFileSync("config.json"))
+  if (isErr(config)) return err("failed to read config file", config)
+
+  // you would probably parse the config here
+
+  return config
+}
+```
+
+At some point, you'll want to handle the error chain. Use `messageChain` to log the error and all of its causes:
+
+```ts
+// getConfig() function from above...
+
+const config = getConfig()
+if (isErr(config)) {
+  console.error(config.messageChain) // failed to read config file -> ENOENT: no such file or directory, open 'config.json'
+  process.exit(1)
 }
 
-const result = getUserById(123)
-if (isErr(result)) console.error(result.fmtErr())
-// "failed to find user -> failed to connect to database"
-else console.log(`Hello, ${result.name}!`)
+// do something with config...
 ```
 
 You can also add context to errors to help with debugging and logging:
 
 ```ts
-function getUserById(id: number): Result<User> {
-  const result = attempt(() => db.findUser(id))
+function getUserById(id: number): Promise<Result<User>> {
+  const user = await attempt(async () => db.findUser(id))
 
-  if (isErr(result)) {
-    // Add context to the error before returning it
-    return err("failed to find user", result).ctx({
+  if (isErr(user)) {
+    // add context to the error before returning it
+    return err("failed to find user", user).ctx({
       userId: id,
-      operation: "findUser",
       timestamp: new Date().toISOString(),
     })
   }
 
-  return result
+  return user
 }
 
-const result = getUserById(123)
-if (isErr(result)) {
-  console.error(result.fmtErr()) // "failed to find user -> failed to connect to database"
-
-  // Get the context for logging or debugging
-  console.log(`Error for user ID: ${result.get("userId")}`)
-  console.log(`Operation: ${result.get("operation")}`)
-  console.log(`Timestamp: ${result.get("timestamp")}`)
-} else console.log(`Hello, ${result.name}!`)
+const user = await getUserById(123)
+if (isErr(user)) {
+  console.error(user.messageChain)
+  // get the context for logging or debugging
+  console.log(`Error for user ID: ${user.get("userId")}`)
+  console.log(`Timestamp: ${user.get("timestamp")}`)
+} else console.log(`Hello, ${user.name}!`)
 ```
 
 Errors are propagated up the call stack which helps build more useful error messages.
@@ -105,7 +135,7 @@ As an alternative, there are many other libraries available that are inspired by
 - [badrap/result](https://github.com/badrap/result)
 - [everweij/typescript-result](https://github.com/everweij/typescript-result)
 
-However, these libraries tend to be considerably more complex and have a much larger API surface. In contrast, `ts-explicit-errors` is only ~70 lines of code.
+However, these libraries tend to be considerably more complex and have a much larger API surface. In contrast, `ts-explicit-errors` is only ~100 lines of code.
 
 ## API
 
@@ -135,7 +165,6 @@ The main idea is that **when you would normally write a function that returns `T
   ```ts
   function validateData(data: string): Result {
     if (data.length < 10) return err("data is too short")
-    // use data...
   }
 
   const error = validateData("short")
@@ -173,7 +202,7 @@ function divide(a: number, b: number): Result<number> {
 
 const result = divide(10, 0)
 if (isErr(result)) {
-  console.error(result.fmtErr("failed to divide")) //  "failed to divide -> division by zero"
+  console.error(`failed to divide: ${result.messageChain}`) //  "failed to divide: division by zero"
 } else {
   console.log(result)
 }
@@ -195,31 +224,11 @@ function isErr<T>(result: Result<T>): result is CtxError
 const result = attempt(() => mayThrow())
 if (isErr(result)) {
   // result is a CtxError
-  console.error(result.fmtErr())
+  console.error(result.messageChain)
 } else {
   // result is of type T
   console.log(result)
 }
-```
-
-If you have a function that returns `Result<void>` (the default when `Result` is not given a type argument), you don't need to use `isErr`.
-
-```ts
-function validateData(data: string): Result {
-  if (data.length < 10) return err("data is too short")
-}
-
-const result = validateData("short")
-// Redundant
-if (isErr(result)) console.error(result.fmtErr())
-```
-
-In this case, `result` is either `undefined` or a `CtxError`, so a truthy check is all that is needed.
-
-```ts
-// Note how we also name this `error` instead of `result` which is a bit more clear
-const error = validateData("short")
-if (error) console.error(error.fmtErr())
 ```
 
 ---
@@ -256,7 +265,7 @@ const result = await attempt(() => fs.readFile("file.txt"))
 ### `err` Function
 
 ```ts
-err(message: string, cause?: unknown): CtxError
+err(message: string, cause?: Error): CtxError
 ```
 
 `err` takes a message and a cause (optional) and returns a new [`CtxError`](#ctxerror-class).
@@ -280,6 +289,30 @@ const error = new CtxError("something went wrong", { cause: originalError })
 `CtxError` is a custom error class that extends the built-in `Error` class with additional functionality.
 
 - All instances of `CtxError` are instances of `Error`, so using them in place of `Error` won't cause any issues.
+
+#### `messageChain`
+
+The full error message, which contains all of the error messages in the error chain (this error and all its causes).
+
+- This is formatted as: `cause1 -> cause2 -> ... -> causeN`
+
+```ts
+// imagine these errors are propagated up through various function calls
+const deepError = err("failed to connect to database")
+const middleError = err("failed to do the thing", deepError)
+const topError = err("failed to process request", middleError)
+
+console.log(topError.messageChain)
+// "failed to process request -> failed to do the thing -> failed to connect to database"
+```
+
+#### `rootStack`
+
+The stack trace of the error chain.
+
+**Note:** This is the stack trace from the last/deepest error in the chain. This is probably what you want since this gives you the full stack trace of the error chain.
+
+- If you want the stack trace of the current error, use `stack`.
 
 #### `ctx` Method
 
@@ -342,37 +375,12 @@ const topError = err("failed to process request", middleError).ctx({ logScope: "
 console.log(topError.getAll("logScope")) // ["controller", "service", "database"]
 ```
 
-#### `fmtErr` Method
-
-```ts
-fmtErr(message?: string): string
-```
-
-Returns a nicely formatted error message by unwrapping all error messages in the error chain (this error and all its causes).
-
-- The error message is formatted as: `message -> cause1 -> cause2 -> ... -> causeN`
-- An optional message can be provided which will be the first message in the string
-
-```ts
-// imagine these errors are propagated up through various function calls
-const deepError = err("failed to connect to database")
-const middleError = err("failed to do the thing", deepError)
-const topError = err("failed to process request", middleError)
-
-console.log(topError.fmtErr())
-// "failed to process request -> failed to do the thing -> failed to connect to database"
-
-// With the optional message given
-console.log(topError.fmtErr("something went wrong"))
-// "something went wrong -> failed to process request -> failed to do the thing -> failed to connect to database"
-```
-
 ---
 
 ### `errWithCtx` Function
 
 ```ts
-function errWithCtx(defaultContext: Record<string, unknown>): (message: string, cause?: unknown) => CtxError
+function errWithCtx(defaultContext: Record<string, unknown>): (message: string, cause?: Error) => CtxError
 ```
 
 Creates a [`err`](#err-function) function with predefined context. This is useful when you want to create multiple errors with the same context, such as a common scope or component name.
@@ -381,12 +389,12 @@ Creates a [`err`](#err-function) function with predefined context. This is usefu
 const serviceErr = errWithCtx({ scope: "userService" })
 
 function getUserById(id: number): Result<User> {
-  const result = attempt(() => db.findUser(id))
+  const user = attempt(() => db.findUser(id))
 
   // No need to manually add the scope context every time
-  if (isErr(result)) return serviceErr("failed to find user", result)
+  if (isErr(user)) return serviceErr("failed to find user", user)
 
-  return result
+  return user
 }
 
 // The error will automatically have { scope: "userService" } in its context
@@ -452,7 +460,7 @@ async function main(): Promise<Result<Meeting[]>> {
   return meetingsQueryResult
 }
 
-const result = await example()
+const result = await main()
 if (isErr(result)) {
   const fullContext = {
     logScope: result.getAll<string>("logScope").join("|"),
@@ -460,7 +468,7 @@ if (isErr(result)) {
     queryString: result.get<string>("queryString") ?? "",
   }
 
-  logger.error(result.fmtErr("something went wrong"), fullContext)
+  logger.error(result.messageChain, fullContext)
 } else console.log(result)
 ```
 
