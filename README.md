@@ -1,6 +1,4 @@
-<p align="center">
-<h1 align="center"><img style="color:#36BCF7; width:38px; height:38px;" src="https://raw.githubusercontent.com/adamhl8/ts-explicit-errors/refs/heads/main/assets/logo.svg"> ts-explicit-errors</h1>
-</p>
+<h1 align="center"><img align="top" style="color:#36BCF7; width:38px; height:38px;" src="https://raw.githubusercontent.com/adamhl8/ts-explicit-errors/refs/heads/main/assets/logo.svg"> ts-explicit-errors</h1>
 
 A concise and type-safe error handling library for TypeScript that allows you to treat errors as values so you can write more safe, readable, and maintainable code.
 
