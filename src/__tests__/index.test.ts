@@ -3,9 +3,9 @@
 /** biome-ignore-all lint/suspicious/useAwait: for tests */
 import { describe, expect, spyOn, test } from "bun:test"
 
-import { db, exampleMainWrapper } from "@/__tests__/example.js"
-import type { Result } from "@/index.js"
-import { attempt, CtxError, err, errWithCtx, isErr } from "@/index.js"
+import { db, exampleMainWrapper } from "~/__tests__/example.js"
+import type { Result } from "~/index.js"
+import { attempt, CtxError, err, errWithCtx, isErr } from "~/index.js"
 
 class CustomError extends Error {
   public constructor(message: string) {
@@ -110,7 +110,7 @@ describe("CtxError (constructor)", () => {
 describe("err", () => {
   describe("messageChain", () => {
     test("equals message for a single error", () => {
-      const error = err("Base message")
+      const error = err("Base message", undefined)
 
       expect(error.messageChain).toBe("Base message")
       expect(error.messageChain).toBe(error.message)
@@ -133,7 +133,7 @@ describe("err", () => {
 
     test("includes custom error names in message and excludes Error and CtxError prefixes", () => {
       const regularError = new Error("Error message")
-      const ctxError = err("CtxError message")
+      const ctxError = err("CtxError message", undefined)
       const customError = new CustomError("CustomError message")
 
       const error1 = err("Base message", regularError)
@@ -170,7 +170,7 @@ describe("err", () => {
       expect(error.rootStack).toBe("Deep stack")
       expect(error.rootStack).toBe(deepCause.stack)
 
-      const error2 = err("Base message")
+      const error2 = err("Base message", undefined)
       error2.stack = "Base stack"
 
       expect(error2.rootStack).toBe("Base stack")
@@ -189,14 +189,14 @@ describe("err", () => {
     })
 
     test("shows '<no stack>' when all stacks are blank", () => {
-      const error = err("Base message")
+      const error = err("Base message", undefined)
       error.stack = ""
 
       expect(error.rootStack).toBe("<no stack>")
     })
 
     test("cleans the root stack", () => {
-      const error = err("Base message")
+      const error = err("Base message", undefined)
       const stackLength = error.stack?.split("\n").length ?? 0
       const rootStackLength = error.rootStack.split("\n").length
 
@@ -221,13 +221,13 @@ describe("err", () => {
 
   describe("ctx", () => {
     test("adds context to error", () => {
-      const error = err("Base message").ctx({ foo: "bar" })
+      const error = err("Base message", undefined).ctx({ foo: "bar" })
 
       expect(error.context).toEqual({ foo: "bar" })
     })
 
     test("merges multiple contexts", () => {
-      const error = err("Base message").ctx({ foo: "bar" }).ctx({ baz: "qux" })
+      const error = err("Base message", undefined).ctx({ foo: "bar" }).ctx({ baz: "qux" })
 
       expect(error.context).toEqual({ foo: "bar", baz: "qux" })
     })
@@ -235,19 +235,19 @@ describe("err", () => {
 
   describe("get", () => {
     test("retrieves context value", () => {
-      const error = err("Base message").ctx({ foo: "bar" })
+      const error = err("Base message", undefined).ctx({ foo: "bar" })
 
       expect(error.get<string>("foo")).toBe("bar")
     })
 
     test("returns undefined for non-existent key", () => {
-      const error = err("Base message").ctx({ foo: "bar" })
+      const error = err("Base message", undefined).ctx({ foo: "bar" })
 
       expect(error.get<string>("nonexistent")).toBeUndefined()
     })
 
     test("retrieves falsy values correctly", () => {
-      const error = err("Base message").ctx({
+      const error = err("Base message", undefined).ctx({
         zero: 0,
         empty: "",
         falseValue: false,
@@ -263,7 +263,7 @@ describe("err", () => {
     })
 
     test("retrieves values from error chain", () => {
-      const deepError = err("Deep error").ctx({ deepKey: "foo" })
+      const deepError = err("Deep error", undefined).ctx({ deepKey: "foo" })
       const middleError = err("Middle error", deepError).ctx({ middleKey: "bar" })
       const topError = err("Top error", middleError).ctx({ topKey: "baz" })
 
@@ -273,7 +273,7 @@ describe("err", () => {
     })
 
     test("retrieves deepest context value", () => {
-      const deepError = err("Deep error").ctx({ deepKey: "foo", shared: "deep" })
+      const deepError = err("Deep error", undefined).ctx({ deepKey: "foo", shared: "deep" })
       const middleError = err("Middle error", deepError).ctx({ middleKey: "bar", shared: "middle" })
       const topError = err("Top error", middleError).ctx({ topKey: "baz", shared: "top" })
 
@@ -283,19 +283,19 @@ describe("err", () => {
 
   describe("getAll", () => {
     test("retrieves single context value as array", () => {
-      const error = err("Base message").ctx({ foo: "bar" })
+      const error = err("Base message", undefined).ctx({ foo: "bar" })
 
       expect(error.getAll("foo")).toEqual(["bar"])
     })
 
     test("returns empty array for non-existent key", () => {
-      const error = err("Base message").ctx({ foo: "bar" })
+      const error = err("Base message", undefined).ctx({ foo: "bar" })
 
       expect(error.getAll("nonexistent")).toEqual([])
     })
 
     test("retrieves falsy values correctly", () => {
-      const error = err("Base message").ctx({
+      const error = err("Base message", undefined).ctx({
         zero: 0,
         empty: "",
         falseValue: false,
@@ -311,7 +311,7 @@ describe("err", () => {
     })
 
     test("retrieves values from error chain", () => {
-      const deepError = err("Deep error").ctx({ deepKey: "foo" })
+      const deepError = err("Deep error", undefined).ctx({ deepKey: "foo" })
       const middleError = err("Middle error", deepError).ctx({ middleKey: "bar" })
       const topError = err("Top error", middleError).ctx({ topKey: "baz" })
 
@@ -321,7 +321,7 @@ describe("err", () => {
     })
 
     test("retrieves all values for shared keys in shallowest to deepest order", () => {
-      const deepError = err("Deep error").ctx({ shared: "deep" })
+      const deepError = err("Deep error", undefined).ctx({ shared: "deep" })
       const middleError = err("Middle error", deepError).ctx({ shared: "middle" })
       const topError = err("Top error", middleError).ctx({ shared: "top" })
 
@@ -329,7 +329,7 @@ describe("err", () => {
     })
 
     test("handles gaps in the error chain", () => {
-      const deepError = err("Deep error").ctx({ shared: "deep" })
+      const deepError = err("Deep error", undefined).ctx({ shared: "deep" })
       const middleError = err("Middle error", deepError).ctx({ otherKey: "other" })
       const topError = err("Top error", middleError).ctx({ shared: "top" })
 
@@ -341,7 +341,7 @@ describe("err", () => {
 describe("errWithCtx", () => {
   test("creates an error with predefined context", () => {
     const scopedErr = errWithCtx({ scope: "foo" })
-    const error = scopedErr("Base message")
+    const error = scopedErr("Base message", undefined)
 
     expectErr(error)
 
@@ -363,7 +363,7 @@ describe("errWithCtx", () => {
 
   test("allows adding additional context", () => {
     const scopedErr = errWithCtx({ scope: "foo" })
-    const error = scopedErr("Base message").ctx({ bar: 123 })
+    const error = scopedErr("Base message", undefined).ctx({ bar: 123 })
 
     expectErr(error)
 
@@ -375,7 +375,7 @@ describe("errWithCtx", () => {
     const fooErr = errWithCtx({ scope: "foo" })
     const barErr = errWithCtx({ scope: "bar" })
 
-    const fooError = fooErr("foo error")
+    const fooError = fooErr("foo error", undefined)
     const barError = barErr("bar error", fooError)
 
     expectErr(barError)

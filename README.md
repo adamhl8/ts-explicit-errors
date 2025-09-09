@@ -1,7 +1,6 @@
-# ts-explicit-errors
-
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/ts-explicit-errors.svg)](https://www.npmjs.com/package/ts-explicit-errors)
+<p align="center">
+<h1 align="center"><img style="color:#36BCF7; width:38px; height:38px;" src="https://raw.githubusercontent.com/adamhl8/ts-explicit-errors/refs/heads/main/assets/logo.svg"> ts-explicit-errors</h1>
+</p>
 
 A concise and type-safe error handling library for TypeScript that allows you to treat errors as values so you can write more safe, readable, and maintainable code.
 
@@ -22,11 +21,6 @@ A concise and type-safe error handling library for TypeScript that allows you to
   - [`attempt` Function](#attempt-function)
   - [`err` Function](#err-function)
   - [`CtxError` Class](#ctxerror-class)
-    - [`messageChain`](#messagechain)
-    - [`rootStack`](#rootstack)
-    - [`ctx` Method](#ctx-method)
-    - [`get` Method](#get-method)
-    - [`getAll` Method](#getall-method)
   - [`errWithCtx` Function](#errwithctx-function)
 - [Example](#example)
 
@@ -168,7 +162,7 @@ The main idea is that **when you would normally write a function that returns `T
 
   ```ts
   function validateData(data: string): Result {
-    if (data.length < 10) return err("data is too short")
+    if (data.length < 10) return err("data is too short", undefined)
   }
 
   const error = validateData("short")
@@ -199,7 +193,7 @@ Use `Result`:
 ```ts
 function divide(a: number, b: number): Result<number> {
   if (b === 0) {
-    return err("division by zero")
+    return err("division by zero", undefined)
   }
   return a / b
 }
@@ -269,12 +263,14 @@ const result = await attempt(() => fs.readFile("file.txt"))
 ### `err` Function
 
 ```ts
-err(message: string, cause?: Error): CtxError
+err(message: string, cause: Error | undefined): CtxError
 ```
 
-`err` takes a message and a cause (optional) and returns a new [`CtxError`](#ctxerror-class).
+`err` takes a message and a cause and returns a new [`CtxError`](#ctxerror-class).
 
-- This is a wrapper around `new CtxError()` to make creating errors more concise
+- If there is no cause, you must explicitly pass `undefined` as the cause.
+
+This is a wrapper around `new CtxError()` to make creating errors more concise
 
 ```ts
 const error = err("something went wrong", originalError)
@@ -302,7 +298,7 @@ The full error message, which contains all of the error messages in the error ch
 
 ```ts
 // imagine these errors are propagated up through various function calls
-const deepError = err("failed to connect to database")
+const deepError = err("failed to connect to database", undefined)
 const middleError = err("failed to do the thing", deepError)
 const topError = err("failed to process request", middleError)
 
@@ -327,7 +323,7 @@ ctx(context: Record<string, unknown>): CtxError
 Adds context to the error.
 
 ```ts
-const error = err("failed to process request").ctx({ requestId: "abc-123" })
+const error = err("failed to process request", undefined).ctx({ requestId: "abc-123" })
 
 console.log(error.context) // { requestId: "abc-123" }
 ```
@@ -335,7 +331,7 @@ console.log(error.context) // { requestId: "abc-123" }
 If the error already has context, the new context will be merged over the existing context.
 
 ```ts
-const error = err("failed to process request").ctx({ requestId: "abc-123", userId: 123 })
+const error = err("failed to process request", undefined).ctx({ requestId: "abc-123", userId: 123 })
 // ... later on
 error.ctx({ requestId: "cba-321" })
 
@@ -352,7 +348,7 @@ Retrieves a context value from the error chain (this error and all its causes), 
 
 ```ts
 // imagine these errors are propagated up through various function calls
-const deepError = err("failed to connect to database").ctx({ logScope: "database" })
+const deepError = err("failed to connect to database", undefined).ctx({ logScope: "database" })
 const middleError = err("failed to do the thing", deepError).ctx({ logScope: "service" })
 const topError = err("failed to process request", middleError).ctx({ logScope: "controller" })
 
@@ -372,7 +368,7 @@ Retrieves all context values as an array for a given key from the entire error c
 
 ```ts
 // imagine these errors are propagated up through various function calls
-const deepError = err("failed to connect to database").ctx({ logScope: "database" })
+const deepError = err("failed to connect to database", undefined).ctx({ logScope: "database" })
 const middleError = err("failed to do the thing", deepError).ctx({ logScope: "service" })
 const topError = err("failed to process request", middleError).ctx({ logScope: "controller" })
 
@@ -384,7 +380,7 @@ console.log(topError.getAll("logScope")) // ["controller", "service", "database"
 ### `errWithCtx` Function
 
 ```ts
-function errWithCtx(defaultContext: Record<string, unknown>): (message: string, cause?: Error) => CtxError
+function errWithCtx(defaultContext: Record<string, unknown>): (message: string, cause: Error | undefined) => CtxError
 ```
 
 Creates a [`err`](#err-function) function with predefined context. This is useful when you want to create multiple errors with the same context, such as a common scope or component name.

@@ -51,15 +51,16 @@ export function attempt<T>(fn: () => Promise<T> | T) {
 }
 
 /**
- * Takes a message and a cause (optional) and returns a new {@link CtxError}.
+ * Takes a message and a cause and returns a new {@link CtxError}.
+ * - If there is no cause, you must explicitly pass `undefined` as the cause.
  *
- * - This is a wrapper around `new CtxError()` to make creating errors more concise
+ * This is a wrapper around `new CtxError()` to make creating errors more concise
  *
  * @param message The error message
- * @param cause The cause of the error (optional)
+ * @param cause The cause of the error
  * @returns A new {@link CtxError}
  */
-export function err(message: string, cause?: Error): CtxError {
+export function err(message: string, cause: Error | undefined): CtxError {
   return cause ? new CtxError(message, { cause }) : new CtxError(message)
 }
 
@@ -239,7 +240,7 @@ export class CtxError extends Error {
  * @returns A `err` function with predefined context
  */
 export function errWithCtx(defaultContext: DefaultContext) {
-  return (message: string, cause?: Error): CtxError => err(message, cause).ctx(defaultContext)
+  return (message: string, cause: Error | undefined): CtxError => err(message, cause).ctx(defaultContext)
 }
 
 /**
