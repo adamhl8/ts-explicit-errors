@@ -76,4 +76,4 @@ const fakeLogger = {
   },
 }
 
-export { exampleMainWrapper, fakeLogger, db }
+export { exampleMainWrapper, db }
