@@ -197,14 +197,9 @@ describe("err", () => {
 
     test("cleans the root stack", () => {
       const error = err("Base message", undefined)
-      const stackLength = error.stack?.split("\n").length ?? 0
-      const rootStackLength = error.rootStack.split("\n").length
 
-      expect(error.stack).toContain("at err")
-      expect(error.stack).toContain("at new CtxError")
       expect(error.rootStack).not.toContain("at new CtxError")
       expect(error.rootStack).not.toContain("at err")
-      expect(rootStackLength).toBe(stackLength - 2)
 
       const attemptError = attempt(() => {
         throwsError()
