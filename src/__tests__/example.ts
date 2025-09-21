@@ -1,5 +1,5 @@
-import type { Result } from "~/index.js"
-import { attempt, err, isErr } from "~/index.js"
+import type { Result } from "~/index.ts"
+import { attempt, err, isErr } from "~/index.ts"
 
 // For testing purposes, these functions will do nothing by default and we'll mock them in the test
 const db = {

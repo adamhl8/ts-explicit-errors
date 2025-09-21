@@ -3,9 +3,9 @@
 /** biome-ignore-all lint/suspicious/useAwait: for tests */
 import { describe, expect, spyOn, test } from "bun:test"
 
-import { db, exampleMainWrapper } from "~/__tests__/example.js"
-import type { Result } from "~/index.js"
-import { attempt, CtxError, err, errWithCtx, isErr } from "~/index.js"
+import { db, exampleMainWrapper } from "~/__tests__/example.ts"
+import type { Result } from "~/index.ts"
+import { attempt, CtxError, err, errWithCtx, isErr } from "~/index.ts"
 
 class CustomError extends Error {
   public constructor(message: string) {
