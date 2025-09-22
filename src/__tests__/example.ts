@@ -2,7 +2,7 @@ import type { Result } from "~/index.ts"
 import { attempt, err, isErr } from "~/index.ts"
 
 // For testing purposes, these functions will do nothing by default and we'll mock them in the test
-const db = {
+export const db = {
   connect: (_dbId: string) => {
     void 0
   },
@@ -44,7 +44,7 @@ async function main(): Promise<Result<string>> {
   return meetingsQueryResult
 }
 
-async function exampleMainWrapper() {
+export async function exampleMainWrapper() {
   // wrapped so we can export for use in the tests
   const result = await main()
   if (isErr(result)) {
@@ -75,5 +75,3 @@ const fakeLogger = {
     return errorMessage
   },
 }
-
-export { exampleMainWrapper, db }
