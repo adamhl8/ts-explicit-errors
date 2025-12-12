@@ -259,17 +259,17 @@ type FilterMapReturn<R> =
       Simplify<FilterMapResult<R>>
 
 /**
- * Maps over an array, calling the provided function on each element. Returns an object containing the mapped elements array (`values`) and `errors` array (if any).
+ * Maps over an array/iterable, calling the provided function on each element. Returns an object containing the mapped elements array (`values`) and `errors` array (if any).
  *
  * - Returning `undefined` in the function excludes that element from the `values` array.
  * - Returning a {@link CtxError} (usually via {@link err}) collects the error into the `errors` array.
  *
- * @param items - Array to map over
+ * @param items - Iterable to map over
  * @param fn - The function to execute for each element
  * @returns Object containing values array and optional errors array
  */
-export function filterMap<T, R>(items: T[], fn: (item: T, index: number) => R): FilterMapReturn<R> {
-  const mappedItems = items.map((item, index) => fn(item, index))
+export function filterMap<T, R>(items: Iterable<T>, fn: (item: T, index: number) => R): FilterMapReturn<R> {
+  const mappedItems = Array.from(items).map((item, index) => fn(item, index))
 
   const handleItems = (awaitedItems: Awaited<R>[]) => {
     const errors: CtxError[] = []

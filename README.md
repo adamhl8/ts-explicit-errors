@@ -403,7 +403,7 @@ function getUserById(id: number): Result<User> {
 
 ### `filterMap` Function
 
-`filterMap` maps over an array, calling the provided function on each element. Returns an object containing the mapped elements array (`values`) and `errors` array (if any).
+`filterMap` maps over an array/iterable, calling the provided function on each element. Returns an object containing the mapped elements array (`values`) and `errors` array (if any).
 
 - Returning `undefined` in the function excludes that element from the `values` array.
 - Returning [`CtxError`](#ctxerror-class) (usually via [`err`](#err-function)) collects the error into the `errors` array.
