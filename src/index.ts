@@ -42,7 +42,7 @@ export function attempt<T>(fn: () => Promise<T> | T) {
 
   try {
     const result = fn()
-    return isPromise(result)
+    return isPromiseLike(result)
       ? result.then((value) => value).catch((error: unknown) => convertUnknownErrorToCtxError(error))
       : result
   } catch (error) {
@@ -243,11 +243,73 @@ export function errWithCtx(defaultContext: DefaultContext) {
   return (message: string, cause: Error | undefined): CtxError => err(message, cause).ctx(defaultContext)
 }
 
+type FilterMapResultValue<R> = Exclude<Awaited<R>, CtxError | undefined>
+
+interface FilterMapResult<R> {
+  values: FilterMapResultValue<R>[]
+  errors: CtxError[] | undefined
+}
+
+type FilterMapReturn<R> =
+  // If R (the return type of the given fn) contains a Promise
+  Contains<R, PromiseLike<unknown>> extends true
+    ? // then we return a Promise where all the values have been awaited
+      Promise<Simplify<FilterMapResult<R>>>
+    : // otherwise, we return a synchronous result
+      Simplify<FilterMapResult<R>>
+
+/**
+ * Maps over an array, calling the provided function on each element. Returns an object containing the mapped elements array (`values`) and `errors` array (if any).
+ *
+ * - Returning `undefined` in the function excludes that element from the `values` array.
+ * - Returning a {@link CtxError} (usually via {@link err}) collects the error into the `errors` array.
+ *
+ * @param items - Array to map over
+ * @param fn - The function to execute for each element
+ * @returns Object containing values array and optional errors array
+ */
+export function filterMap<T, R>(items: T[], fn: (item: T, index: number) => R): FilterMapReturn<R> {
+  const mappedItems = items.map((item, index) => fn(item, index))
+
+  const handleItems = (awaitedItems: Awaited<R>[]) => {
+    const errors: CtxError[] = []
+
+    const filteredItems = awaitedItems.filter((item): item is FilterMapResultValue<R> => {
+      if (item === undefined) return false
+
+      if (isErr(item)) {
+        errors.push(item)
+        return false
+      }
+
+      return true
+    })
+
+    return {
+      values: filteredItems,
+      errors: errors.length > 0 ? errors : undefined,
+    }
+  }
+
+  const result = mappedItems.some(isPromiseLike)
+    ? // If any item is a Promise, we await all of them
+      Promise.all(mappedItems).then((resolvedResults) => handleItems(resolvedResults))
+    : // We know at this point that all the return values are not wrapped in Promise (equivalent to Awaited<R>[])
+      handleItems(mappedItems as Awaited<R>[])
+
+  return result as FilterMapReturn<R>
+}
+
 /**
  * @param value The value to check
  * @returns `true` if the value is a Promise (more specifically, a thenable)
  */
-// biome-ignore lint/suspicious/noExplicitAny: we can't use 'unknown' here
-function isPromise(value: any): value is Promise<any> {
-  return value ? typeof value.then === "function" : false
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return value && typeof value === "object" && "then" in value ? typeof value.then === "function" : false
 }
+
+/** Checks if union type U contains any type that is assignable to type T. */
+type Contains<U, T> = Extract<U, T> extends never ? false : true
+
+// https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
+type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {}

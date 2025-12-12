@@ -20,6 +20,7 @@ A concise and type-safe error handling library for TypeScript that allows you to
   - [`err` Function](#err-function)
   - [`CtxError` Class](#ctxerror-class)
   - [`errWithCtx` Function](#errwithctx-function)
+  - [`filterMap` Function](#filtermap-function)
 - [Example](#example)
 
 <!-- tocstop -->
@@ -247,7 +248,7 @@ if (isErr(result)) {
 // do something with `result`
 ```
 
-The function can be either synchronous or asynchronous.
+The provided function can be either synchronous or asynchronous.
 
 - If the function is async / returns a Promise, the returned `Result` will be a `Promise` and should be `await`ed
 
@@ -396,6 +397,45 @@ function getUserById(id: number): Result<User> {
 }
 
 // The error will automatically have { scope: "userService" } in its context
+```
+
+---
+
+### `filterMap` Function
+
+`filterMap` maps over an array, calling the provided function on each element. Returns an object containing the mapped elements array (`values`) and `errors` array (if any).
+
+- Returning `undefined` in the function excludes that element from the `values` array.
+- Returning [`CtxError`](#ctxerror-class) (usually via [`err`](#err-function)) collects the error into the `errors` array.
+
+```ts
+const filePaths = ["file1.txt", "file2.txt", "file3.txt"]
+
+const { values, errors } = await filterMap(filePaths, async (filePath) => {
+  const result = await processFile(filePath) // processFile returns a Result
+  if (isErr(result)) return result // appended to the `errors` array
+  if (!result) return // filtered out
+  return result // appended to the `values` array
+})
+
+if (errors) {
+  console.error(`Failed to process ${errors.length} files`)
+  errors.forEach((error) => console.error(error.messageChain))
+}
+
+console.log(`Successfully processed ${values.length} files`)
+```
+
+The provided function can be either synchronous or asynchronous.
+
+- If the function is async / returns a Promise, the returned value will be a `Promise` and should be `await`ed
+
+```ts
+// synchronous usage
+const { values, errors } = filterMap([1, 2, 3], (n) => {
+  if (n === 2) return err("invalid number", undefined)
+  return n * 2
+})
 ```
 
 ---

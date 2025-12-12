@@ -5,7 +5,7 @@ import { describe, expect, spyOn, test } from "bun:test"
 
 import { db, exampleMainWrapper } from "~/__tests__/example.ts"
 import type { Result } from "~/index.ts"
-import { attempt, CtxError, err, errWithCtx, isErr } from "~/index.ts"
+import { attempt, CtxError, err, errWithCtx, filterMap, isErr } from "~/index.ts"
 
 class CustomError extends Error {
   public constructor(message: string) {
@@ -377,6 +377,133 @@ describe("errWithCtx", () => {
 
     expect(barError.messageChain).toBe("bar error -> foo error")
     expect(barError.getAll("scope")).toEqual(["bar", "foo"])
+  })
+})
+
+describe("filterMap", () => {
+  describe("synchronous", () => {
+    test("maps values successfully", () => {
+      const result = filterMap([1, 2, 3], (n) => n * 2)
+
+      expect(result.values).toEqual([2, 4, 6])
+      expect(result.errors).toBeUndefined()
+    })
+
+    test("filters out undefined values", () => {
+      const result = filterMap([1, 2, 3, 4], (n) => {
+        if (n % 2 === 0) return
+        return n
+      })
+
+      expect(result.values).toEqual([1, 3])
+      expect(result.errors).toBeUndefined()
+    })
+
+    test("collects errors into errors array", () => {
+      const result = filterMap([1, 2, 3], (n) => {
+        if (n === 2) return err("error at 2", undefined)
+        return n
+      })
+
+      expect(result.values).toEqual([1, 3])
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors?.[0]?.message).toBe("error at 2")
+    })
+
+    test("handles mixed results", () => {
+      const result = filterMap([1, 2, 3, 4, 5], (n) => {
+        if (n === 2) return
+        if (n === 4) return err("error at 4", undefined)
+        return n * 10
+      })
+
+      expect(result.values).toEqual([10, 30, 50])
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors?.[0]?.message).toBe("error at 4")
+    })
+
+    test("handles empty array", () => {
+      const items: string[] = []
+      const result = filterMap(items, (n) => n)
+
+      expect(result.values).toEqual([])
+      expect(result.errors).toBeUndefined()
+    })
+
+    test("handles all undefined", () => {
+      const result = filterMap([1, 2, 3], () => void 0)
+
+      expect(result.values).toEqual([])
+      expect(result.errors).toBeUndefined()
+    })
+
+    test("handles all errors", () => {
+      const result = filterMap([1, 2, 3], (n) => err(`error at ${n}`, undefined))
+
+      expect(result.values).toEqual([])
+      expect(result.errors).toHaveLength(3)
+      expect(result.errors?.[0]?.message).toBe("error at 1")
+      expect(result.errors?.[1]?.message).toBe("error at 2")
+      expect(result.errors?.[2]?.message).toBe("error at 3")
+    })
+
+    test("passes index parameter correctly", () => {
+      const result = filterMap(["a", "b", "c"], (item, index) => `${item}${index}`)
+
+      expect(result.values).toEqual(["a0", "b1", "c2"])
+    })
+  })
+
+  describe("asynchronous", () => {
+    test("maps values successfully", async () => {
+      const result = await filterMap([1, 2, 3], async (n) => n * 2)
+
+      expect(result.values).toEqual([2, 4, 6])
+      expect(result.errors).toBeUndefined()
+    })
+
+    test("filters out undefined values", async () => {
+      const result = await filterMap([1, 2, 3, 4], async (n) => {
+        if (n % 2 === 0) return
+        return n
+      })
+
+      expect(result.values).toEqual([1, 3])
+      expect(result.errors).toBeUndefined()
+    })
+
+    test("collects errors into errors array", async () => {
+      const result = await filterMap([1, 2, 3], async (n) => {
+        if (n === 2) return err("error at 2", undefined)
+        return n
+      })
+
+      expect(result.values).toEqual([1, 3])
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors?.[0]?.message).toBe("error at 2")
+    })
+
+    test("handles mixed results", async () => {
+      const result = await filterMap([1, 2, 3, 4, 5], async (n) => {
+        if (n === 2) return
+        if (n === 4) return err("error at 4", undefined)
+        return n * 10
+      })
+
+      expect(result.values).toEqual([10, 30, 50])
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors?.[0]?.message).toBe("error at 4")
+    })
+
+    test("handles mixed sync/async returns", async () => {
+      const result = await filterMap([1, 2, 3, 4], (n) => {
+        if (n % 2 === 0) return Promise.resolve(n * 10)
+        return n
+      })
+
+      expect(result.values).toEqual([1, 20, 3, 40])
+      expect(result.errors).toBeUndefined()
+    })
   })
 })
 
