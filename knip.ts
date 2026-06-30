@@ -1,3 +1,5 @@
 import { knipConfig } from "@adamhl8/configs"
 
-export default knipConfig()
+const config = knipConfig()
+
+export default config

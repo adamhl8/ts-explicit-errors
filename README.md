@@ -2,7 +2,7 @@
 
 A concise and type-safe error handling library for TypeScript that allows you to treat errors as values so you can write more safe, readable, and maintainable code.
 
-- Zero dependencies (the whole library is only ~100 LoC)
+- Zero dependencies
 - Small, easy to understand API
 - Attach and retrieve context data from errors
 
@@ -144,6 +144,7 @@ In an effort to keep the API concise, `ts-explicit-errors` only exports a few th
 - `err` Function
   - The `CtxError` Class is also exported but should generally be accessed via `err`
 - `errWithCtx` Function
+- `filterMap` Function
 
 ---
 
