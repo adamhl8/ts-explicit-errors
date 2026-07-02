@@ -1,4 +1,4 @@
-// oxlint-disable typescript/require-await unicorn/no-useless-undefined vitest/no-conditional-in-test
+// oxlint-disable typescript/require-await vitest/no-conditional-in-test
 import { describe, expect, it } from "vitest"
 
 import { err } from "#/ctx-error.ts"

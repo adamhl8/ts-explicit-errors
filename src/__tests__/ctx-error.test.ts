@@ -1,4 +1,4 @@
-// oxlint-disable unicorn/no-null unicorn/no-useless-undefined unicorn/error-message vitest/no-conditional-in-test
+// oxlint-disable unicorn/no-null unicorn/error-message vitest/no-conditional-in-test
 import { describe, expect, it } from "vitest"
 
 import { expectErr, throwsError } from "#/__tests__/helpers.ts"
