@@ -36,7 +36,7 @@
     }
   },
   "scripts": {
-    "lint": "markdown-toc -i --bullets '-' --maxdepth 3 ./README.md && oxfmt && oxlint --fix --fix-suggestions --fix-dangerously && adamhl8-knip && nub run test",
+    "lint": "markdown-toc -i --bullets '-' --maxdepth 3 ./README.md && oxfmt && oxlint --fix --fix-suggestions --fix-dangerously && knip && nub run test",
     "test": "vitest run",
     "bump-deps": "nub update -L && rm -f lock.yaml && nub i && oxfmt lock.yaml",
     "bundle": "nub run lint && tsdown",
@@ -45,7 +45,7 @@
     "prepare": "lefthook install"
   },
   "devDependencies": {
-    "@adamhl8/configs": "^0.24.13",
+    "@adamhl8/configs": "^0.27.2",
     "@arethetypeswrong/core": "^0.18.4",
     "@commitlint/cli": "^21.2.0",
     "@commitlint/config-conventional": "^21.2.0",
