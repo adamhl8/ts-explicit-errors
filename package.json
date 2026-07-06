@@ -4,8 +4,10 @@
   "description": "A TypeScript error handling library for treating errors as values",
   "keywords": [
     "error",
-    "error handling",
+    "error-handling",
+    "errors",
     "result",
+    "result-type",
     "typescript"
   ],
   "homepage": "https://github.com/adamhl8/ts-explicit-errors",
@@ -39,7 +41,7 @@
     "prepare": "just prepare"
   },
   "devDependencies": {
-    "@adamhl8/configs": "^0.28.1",
+    "@adamhl8/configs": "^0.33.2",
     "@arethetypeswrong/core": "^0.18.4",
     "@commitlint/cli": "^21.2.0",
     "@commitlint/config-conventional": "^21.2.0",
