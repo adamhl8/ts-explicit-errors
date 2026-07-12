@@ -1,6 +1,6 @@
-import { attempt } from "#/attempt.ts"
-import { err, isErr } from "#/ctx-error.ts"
-import type { Result } from "#/result.ts"
+import { attempt } from "#attempt.ts"
+import { err, isErr } from "#ctx-error.ts"
+import type { Result } from "#result.ts"
 
 // For testing purposes, these functions will do nothing by default and we'll mock them in the test
 export const db = {

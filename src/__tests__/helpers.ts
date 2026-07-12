@@ -1,9 +1,9 @@
 // oxlint-disable no-throw-literal typescript/only-throw-error
-import { expect } from "vitest"
+import { expect } from "bun:test"
 
-import { isErr } from "#/ctx-error.ts"
-import type { CtxError } from "#/ctx-error.ts"
-import type { Result } from "#/result.ts"
+import { isErr } from "#ctx-error.ts"
+import type { CtxError } from "#ctx-error.ts"
+import type { Result } from "#result.ts"
 
 export const throwsError = () => {
   throw new Error("sync error")

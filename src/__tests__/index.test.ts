@@ -1,9 +1,9 @@
 // oxlint-disable typescript/require-await
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it, spyOn } from "bun:test"
 
-import { db, exampleMainWrapper } from "#/__tests__/example.ts"
-import { expectErr } from "#/__tests__/helpers.ts"
-import { attempt } from "#/attempt.ts"
+import { db, exampleMainWrapper } from "#__tests__/example.ts"
+import { expectErr } from "#__tests__/helpers.ts"
+import { attempt } from "#attempt.ts"
 
 describe("integration", () => {
   it("attempt and err work together", async () => {
@@ -30,7 +30,7 @@ describe("integration", () => {
   })
 
   it("complete example", async () => {
-    const connectSpy = vi.spyOn(db, "connect").mockImplementation(() => {
+    const connectSpy = spyOn(db, "connect").mockImplementation(() => {
       throw new Error("invalid dbId")
     })
 
@@ -42,7 +42,7 @@ describe("integration", () => {
 
     connectSpy.mockRestore()
 
-    const querySpy = vi.spyOn(db, "query").mockImplementation(() => {
+    const querySpy = spyOn(db, "query").mockImplementation(() => {
       throw new Error("invalid query")
     })
 

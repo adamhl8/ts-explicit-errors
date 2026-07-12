@@ -1,7 +1,7 @@
-import type { CtxError } from "#/ctx-error.ts"
-import { isErr } from "#/ctx-error.ts"
-import { isPromiseLike } from "#/util.ts"
-import type { Contains, Simplify } from "#/util.ts"
+import type { CtxError } from "#ctx-error.ts"
+import { isErr } from "#ctx-error.ts"
+import { isPromiseLike } from "#util.ts"
+import type { Contains, Simplify } from "#util.ts"
 
 type FilterMapResultValue<R> = Exclude<Awaited<R>, CtxError | undefined>
 

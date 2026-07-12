@@ -1,6 +1,6 @@
-import { CtxError } from "#/ctx-error.ts"
-import type { Result } from "#/result.ts"
-import { isPromiseLike } from "#/util.ts"
+import { CtxError } from "#ctx-error.ts"
+import type { Result } from "#result.ts"
+import { isPromiseLike } from "#util.ts"
 
 const convertUnknownErrorToCtxError = (error: unknown) => {
   const newError = error instanceof Error ? error : new Error(String(error))

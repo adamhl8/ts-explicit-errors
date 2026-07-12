@@ -1,4 +1,4 @@
-import type { Result } from "#/result.ts"
+import type { Result } from "#result.ts"
 
 type DefaultContext = Record<string, unknown>
 

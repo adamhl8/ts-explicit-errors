@@ -1,9 +1,9 @@
 // oxlint-disable typescript/require-await no-throw-literal unicorn/no-null typescript/only-throw-error
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "bun:test"
 
-import { expectErr, throwsError, throwsString } from "#/__tests__/helpers.ts"
-import { attempt } from "#/attempt.ts"
-import { isErr } from "#/ctx-error.ts"
+import { expectErr, throwsError, throwsString } from "#__tests__/helpers.ts"
+import { attempt } from "#attempt.ts"
+import { isErr } from "#ctx-error.ts"
 
 describe("attempt", () => {
   it("handles successful synchronous operations", () => {

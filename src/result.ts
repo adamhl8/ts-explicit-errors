@@ -1,4 +1,4 @@
-import type { CtxError } from "#/ctx-error.ts"
+import type { CtxError } from "#ctx-error.ts"
 
 /**
  * Represents a value or a {@link CtxError}.

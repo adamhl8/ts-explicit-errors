@@ -1,9 +1,9 @@
 // oxlint-disable unicorn/no-null unicorn/error-message vitest/no-conditional-in-test
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "bun:test"
 
-import { expectErr, throwsError } from "#/__tests__/helpers.ts"
-import { attempt } from "#/attempt.ts"
-import { CtxError, err, errWithCtx } from "#/ctx-error.ts"
+import { expectErr, throwsError } from "#__tests__/helpers.ts"
+import { attempt } from "#attempt.ts"
+import { CtxError, err, errWithCtx } from "#ctx-error.ts"
 
 class CustomError extends Error {
   public constructor(message: string) {

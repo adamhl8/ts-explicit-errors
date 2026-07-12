@@ -1,8 +1,8 @@
 // oxlint-disable typescript/require-await vitest/no-conditional-in-test
-import { describe, expect, it } from "vitest"
+import { describe, expect, it } from "bun:test"
 
-import { err } from "#/ctx-error.ts"
-import { filterMap } from "#/filter-map.ts"
+import { err } from "#ctx-error.ts"
+import { filterMap } from "#filter-map.ts"
 
 describe("filterMap", () => {
   describe("synchronous", () => {
