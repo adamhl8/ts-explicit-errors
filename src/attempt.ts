@@ -25,7 +25,7 @@ export function attempt<T>(fn: () => Promise<T> | T) {
   try {
     const result = fn()
     return isPromiseLike(result)
-      ? // oxlint-disable-next-line promise/prefer-await-to-then promise/prefer-await-to-callbacks
+      ? // oxlint-disable-next-line promise/prefer-await-to-then promise/prefer-await-to-callbacks - `attempt` stays synchronous for a synchronous `fn`, so it can't be async.
         result.then((value) => value).catch((error: unknown) => convertUnknownErrorToCtxError(error))
       : result
   } catch (error) {

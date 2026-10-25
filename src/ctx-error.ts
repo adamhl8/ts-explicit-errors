@@ -147,7 +147,7 @@ export class CtxError extends Error {
       if (deepestValue !== undefined) return deepestValue
     }
 
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion - The caller picks the type of a context value with `T`.
     if (this.context && Object.hasOwn(this.context, key)) return this.context[key] as T
 
     return
@@ -170,7 +170,7 @@ export class CtxError extends Error {
 
     if (this.cause instanceof CtxError) values.push(...this.cause.getAll(key))
 
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion - The caller picks the type of the context values with `T`.
     return values as T[]
   }
 }

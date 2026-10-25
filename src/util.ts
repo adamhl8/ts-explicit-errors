@@ -9,5 +9,5 @@ export const isPromiseLike = (value: unknown): value is PromiseLike<unknown> =>
 export type Contains<U, T> = Extract<U, T> extends never ? false : true
 
 // https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
-// oxlint-disable-next-line typescript/ban-types
+// oxlint-disable-next-line typescript/ban-types - Intersecting with `{}` is what flattens the mapped type.
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {}

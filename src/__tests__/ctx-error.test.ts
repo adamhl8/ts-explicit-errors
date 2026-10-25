@@ -1,4 +1,3 @@
-// oxlint-disable unicorn/no-null unicorn/error-message vitest/no-conditional-in-test
 import { describe, expect, it } from "bun:test"
 
 import { expectErr, throwsError } from "#__tests__/helpers.ts"
@@ -84,6 +83,7 @@ describe("err", () => {
     })
 
     it("excludes blank error messages", () => {
+      // oxlint-disable-next-line unicorn/error-message - The test covers blank messages.
       const blankError = new Error("")
       const error = err("Base message", blankError)
 
@@ -91,6 +91,7 @@ describe("err", () => {
     })
 
     it("shows 'Unknown error' when all messages are blank", () => {
+      // oxlint-disable-next-line unicorn/error-message - The test covers blank messages.
       const blankError = new Error("")
       const error = err("", blankError)
 
@@ -144,7 +145,7 @@ describe("err", () => {
       })
       expectErr(attemptError)
 
-      const attemptErrorStackLength = attemptError.stack?.split("\n").length ?? 0
+      const attemptErrorStackLength = String(attemptError.stack).split("\n").length
       const attemptErrorRootStackLength = attemptError.rootStack.split("\n").length
 
       expect(attemptError.stack).toContain("at attempt")
@@ -185,6 +186,7 @@ describe("err", () => {
         zero: 0,
         empty: "",
         falseValue: false,
+        // oxlint-disable-next-line unicorn/no-null - The test covers falsy context values.
         nullValue: null,
         undefinedValue: undefined,
       })
@@ -193,7 +195,7 @@ describe("err", () => {
       expect(error.get<string>("empty")).toBe("")
       expect(error.get<boolean>("falseValue")).toBe(false)
       expect(error.get<null>("nullValue")).toBeNull()
-      // oxlint-disable-next-line typescript/no-confusing-void-expression
+      // oxlint-disable-next-line typescript/no-confusing-void-expression - The test covers a context value of `undefined`.
       expect(error.get<undefined>("undefinedValue")).toBeUndefined()
     })
 
@@ -234,6 +236,7 @@ describe("err", () => {
         zero: 0,
         empty: "",
         falseValue: false,
+        // oxlint-disable-next-line unicorn/no-null - The test covers falsy context values.
         nullValue: null,
         undefinedValue: undefined,
       })
@@ -241,6 +244,7 @@ describe("err", () => {
       expect(error.getAll("zero")).toStrictEqual([0])
       expect(error.getAll("empty")).toStrictEqual([""])
       expect(error.getAll("falseValue")).toStrictEqual([false])
+      // oxlint-disable-next-line unicorn/no-null - The test covers falsy context values.
       expect(error.getAll("nullValue")).toStrictEqual([null])
       expect(error.getAll("undefinedValue")).toStrictEqual([undefined])
     })

@@ -1,4 +1,3 @@
-// oxlint-disable typescript/require-await no-throw-literal unicorn/no-null typescript/only-throw-error
 import { describe, expect, it } from "bun:test"
 
 import { expectErr, throwsError, throwsString } from "#__tests__/helpers.ts"
@@ -24,6 +23,7 @@ describe("attempt", () => {
   })
 
   it("handles successful async operations", async () => {
+    // oxlint-disable-next-line typescript/require-await - `attempt` must handle async functions.
     const result = await attempt(async () => "async success")
 
     expect(isErr(result)).toBe(false)
@@ -31,6 +31,7 @@ describe("attempt", () => {
   })
 
   it("handles failed async operations", async () => {
+    // oxlint-disable-next-line typescript/require-await - `attempt` must handle async functions that throw.
     const result = await attempt(async () => {
       throw new Error("async error")
     })
@@ -48,12 +49,14 @@ describe("attempt", () => {
     expect(result.messageChain).toBe("string error")
 
     const nullResult = attempt(() => {
+      // oxlint-disable-next-line no-throw-literal typescript/only-throw-error unicorn/no-null - `attempt` must handle a thrown `null`.
       throw null
     })
     expectErr(nullResult)
     expect(nullResult.messageChain).toBe("null")
 
     const undefinedResult = attempt(() => {
+      // oxlint-disable-next-line no-throw-literal typescript/only-throw-error - `attempt` must handle a thrown `undefined`.
       throw undefined
     })
     expectErr(undefinedResult)

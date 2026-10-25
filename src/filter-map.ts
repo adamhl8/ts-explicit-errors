@@ -30,7 +30,7 @@ type FilterMapReturn<R> =
  * @returns {FilterMapReturn<R>} Object containing values array and optional errors array
  */
 export const filterMap = <T, R>(items: Iterable<T>, fn: (item: T, index: number) => R): FilterMapReturn<R> => {
-  const mappedItems = [...items].map((item, index) => fn(item, index))
+  const mappedItems = Array.from(items, (item, index) => fn(item, index))
 
   const handleItems = (awaitedItems: Awaited<R>[]) => {
     const errors: CtxError[] = []
@@ -54,11 +54,11 @@ export const filterMap = <T, R>(items: Iterable<T>, fn: (item: T, index: number)
 
   const result = mappedItems.some(isPromiseLike)
     ? // If any item is a Promise, we await all of them
-      // oxlint-disable-next-line promise/prefer-await-to-then
+      // oxlint-disable-next-line promise/prefer-await-to-then - `filterMap` stays synchronous unless an item is a Promise, so it can't be async.
       Promise.all(mappedItems).then((resolvedResults) => handleItems(resolvedResults))
     : // oxlint-disable-next-line typescript/no-unsafe-type-assertion - We know at this point that all the return values are not wrapped in Promise (equivalent to Awaited<R>[])
       handleItems(mappedItems as Awaited<R>[])
 
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion - TypeScript cannot narrow `result` to the conditional `FilterMapReturn<R>`.
   return result as FilterMapReturn<R>
 }

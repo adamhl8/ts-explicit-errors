@@ -1,4 +1,4 @@
-// oxlint-disable typescript/require-await vitest/no-conditional-in-test
+// oxlint-disable typescript/require-await vitest/no-conditional-in-test - The mapper callbacks are test inputs, so their `async` and conditionals are deliberate.
 import { describe, expect, it } from "bun:test"
 
 import { err } from "#ctx-error.ts"

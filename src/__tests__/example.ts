@@ -7,7 +7,7 @@ export const db = {
   connect: (_dbId: string) => {
     void 0
   },
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion - The tests replace `query` with a spy.
   query: ((_queryString: string) => {
     void 0
   }) as unknown as (queryString: string) => Promise<string>,

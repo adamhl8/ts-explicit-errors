@@ -1,4 +1,3 @@
-// oxlint-disable typescript/require-await
 import { describe, expect, it, spyOn } from "bun:test"
 
 import { db, exampleMainWrapper } from "#__tests__/example.ts"
@@ -7,6 +6,7 @@ import { attempt } from "#attempt.ts"
 
 describe("integration", () => {
   it("attempt and err work together", async () => {
+    // oxlint-disable-next-line typescript/require-await - `attempt` must handle async functions that throw.
     const result = await attempt(async () => {
       throw new Error("Original error")
     })
@@ -20,6 +20,7 @@ describe("integration", () => {
     const deepError = new Error("Deep error")
     const middleError = new Error("Middle error", { cause: deepError })
 
+    // oxlint-disable-next-line typescript/require-await - `attempt` must handle async functions that throw.
     const result = await attempt(async () => {
       throw middleError
     })

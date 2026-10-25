@@ -449,7 +449,6 @@ Putting it all together:
 
 ```ts
 import type { Result } from "ts-explicit-errors"
-
 import { attempt, err, isErr } from "ts-explicit-errors"
 
 // Pretend this "db" module doesn't belong to us and its functions might throw errors

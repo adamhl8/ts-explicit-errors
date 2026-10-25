@@ -1,4 +1,3 @@
-// oxlint-disable no-throw-literal typescript/only-throw-error
 import { expect } from "bun:test"
 
 import { isErr } from "#ctx-error.ts"
@@ -10,6 +9,7 @@ export const throwsError = () => {
 }
 
 export const throwsString = () => {
+  // oxlint-disable-next-line no-throw-literal typescript/only-throw-error - `attempt` must handle thrown non-Errors.
   throw "string error"
 }
 
