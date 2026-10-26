@@ -1,6 +1,6 @@
 {
   "name": "ts-explicit-errors",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "A TypeScript error handling library for treating errors as values",
   "keywords": [
     "error",

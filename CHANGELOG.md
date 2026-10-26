@@ -1,3 +1,9 @@
+## [5.0.1](https://github.com/adamhl8/ts-explicit-errors/compare/v5.0.0..v5.0.1) - 2026-10-26
+
+### ⚙️ Miscellaneous Tasks
+
+- _(deps)_ update dependencies ([ccf1141](https://github.com/adamhl8/ts-explicit-errors/commit/ccf1141ecaf211d1f86678e31e7c368cc4025f8a) by @adamhl8)
+
 ## [5.0.0](https://github.com/adamhl8/ts-explicit-errors/compare/v4.1.3..v5.0.0) - 2026-10-26
 
 ### 🚀 Features
