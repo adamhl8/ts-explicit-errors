@@ -1,18 +1,18 @@
 import { expect } from "bun:test"
 
-import { isErr } from "#ctx-error.ts"
-import type { CtxError } from "#ctx-error.ts"
-import type { Result } from "#result.ts"
+import { isErr } from "#result.ts"
 
 export const throwsError = () => {
   throw new Error("sync error")
 }
 
-export const throwsString = () => {
-  // oxlint-disable-next-line no-throw-literal typescript/only-throw-error - `attempt` must handle thrown non-Errors.
-  throw "string error"
-}
+/** Returns a function that throws `value`, which may be a non-`Error`. */
+export const throwing =
+  (value: unknown): (() => void) =>
+  () => {
+    throw value
+  }
 
-export const expectErr: <T>(result: Result<T>) => asserts result is CtxError = (result) => {
-  expect(isErr(result)).toBe(true)
+export const expectErr: (value: unknown) => asserts value is Error = (value) => {
+  expect(isErr(value)).toBe(true)
 }

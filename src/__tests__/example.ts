@@ -1,5 +1,7 @@
 import { attempt } from "#attempt.ts"
-import { err, isErr } from "#ctx-error.ts"
+import { getAllContext, getContext, messageChain } from "#chain.ts"
+import { err } from "#err.ts"
+import { isErr } from "#result.ts"
 import type { Result } from "#result.ts"
 
 // For testing purposes, these functions will do nothing by default and we'll mock them in the test
@@ -18,7 +20,7 @@ const connectToDb = (dbId: string): Result => {
     db.connect(dbId)
   })
   if (isErr(result)) {
-    return err("failed to connect to database", result).ctx({
+    return err("failed to connect to database", result, {
       timestamp: "<timestamp1>",
       logScope: "connect",
     })
@@ -31,14 +33,14 @@ const queryDb = async (queryString: string): Promise<Result<string>> => {
 
   const queryResult = await attempt(async () => db.query(queryString))
   if (isErr(queryResult))
-    return err("failed to query db", queryResult).ctx({ queryString, logScope: "query", timestamp: "<timestamp2>" })
+    return err("failed to query db", queryResult, { queryString, logScope: "query", timestamp: "<timestamp2>" })
 
   return queryResult
 }
 
 const main = async (): Promise<Result<string>> => {
   const meetingsQueryResult = await queryDb("SELECT * FROM meetings WHERE scheduled_time < actual_end_time")
-  if (isErr(meetingsQueryResult)) return err("failed to get meetings", meetingsQueryResult).ctx({ logScope: "main" })
+  if (isErr(meetingsQueryResult)) return err("failed to get meetings", meetingsQueryResult, { logScope: "main" })
 
   return meetingsQueryResult
 }
@@ -65,12 +67,12 @@ export const exampleMainWrapper = async () => {
   const result = await main()
   if (isErr(result)) {
     const fullContext = {
-      logScope: result.getAll<string>("logScope").join("|"),
-      timestamp: result.get<string>("timestamp") ?? "",
-      queryString: result.get<string>("queryString") ?? "",
+      logScope: getAllContext<string>(result, "logScope").join("|"),
+      timestamp: getContext<string>(result, "timestamp") ?? "",
+      queryString: getContext<string>(result, "queryString") ?? "",
     }
 
-    return fakeLogger.error(`something went wrong -> ${result.messageChain}`, fullContext)
+    return fakeLogger.error(`something went wrong -> ${messageChain(result)}`, fullContext)
   } // else console.log(result)
   return ""
 }

@@ -3,6 +3,8 @@ import { describe, expect, it, spyOn } from "bun:test"
 import { db, exampleMainWrapper } from "#__tests__/example.ts"
 import { expectErr } from "#__tests__/helpers.ts"
 import { attempt } from "#attempt.ts"
+import { messageChain } from "#chain.ts"
+import { err } from "#err.ts"
 
 describe("integration", () => {
   it("attempt and err work together", async () => {
@@ -13,7 +15,7 @@ describe("integration", () => {
 
     expectErr(result)
 
-    expect(result.messageChain).toBe("Original error")
+    expect(messageChain(err("wrapped", result))).toBe("wrapped -> Original error")
   })
 
   it("handles nested error chains", async () => {
@@ -27,7 +29,7 @@ describe("integration", () => {
 
     expectErr(result)
 
-    expect(result.messageChain).toBe("Middle error -> Deep error")
+    expect(messageChain(err("wrapped", result))).toBe("wrapped -> Middle error -> Deep error")
   })
 
   it("complete example", async () => {

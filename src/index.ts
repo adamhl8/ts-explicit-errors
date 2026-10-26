@@ -1,4 +1,6 @@
 export { attempt } from "#attempt.ts"
-export { CtxError, err, errWithCtx, isErr } from "#ctx-error.ts"
+export { err, errWithCtx } from "#err.ts"
 export { filterMap } from "#filter-map.ts"
+export { findCause, getAllContext, getContext, messageChain, rootStack } from "#chain.ts"
+export { isErr } from "#result.ts"
 export type { Result } from "#result.ts"

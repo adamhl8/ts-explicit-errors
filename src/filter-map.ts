@@ -1,13 +1,12 @@
-import type { CtxError } from "#ctx-error.ts"
-import { isErr } from "#ctx-error.ts"
+import { isErr } from "#result.ts"
 import { isPromiseLike } from "#util.ts"
 import type { Contains, Simplify } from "#util.ts"
 
-type FilterMapResultValue<R> = Exclude<Awaited<R>, CtxError | undefined>
+type FilterMapResultValue<R> = Exclude<Awaited<R>, Error | undefined>
 
 interface FilterMapResult<R> {
   values: FilterMapResultValue<R>[]
-  errors: CtxError[] | undefined
+  errors: Error[] | undefined
 }
 
 type FilterMapReturn<R> =
@@ -23,7 +22,7 @@ type FilterMapReturn<R> =
  * elements array (`values`) and `errors` array (if any).
  *
  * - Returning `undefined` in the function excludes that element from the `values` array.
- * - Returning a {@link CtxError} (usually via {@link err}) collects the error into the `errors` array.
+ * - Returning an `Error` (usually via `err`) collects the error into the `errors` array.
  *
  * @param {Iterable<T>} items - Iterable to map over
  * @param {fn: (item: T, index: number) => R} fn - The function to execute for each element
@@ -33,7 +32,7 @@ export const filterMap = <T, R>(items: Iterable<T>, fn: (item: T, index: number)
   const mappedItems = Array.from(items, (item, index) => fn(item, index))
 
   const handleItems = (awaitedItems: Awaited<R>[]) => {
-    const errors: CtxError[] = []
+    const errors: Error[] = []
 
     const filteredItems = awaitedItems.filter((item): item is FilterMapResultValue<R> => {
       if (item === undefined) return false
