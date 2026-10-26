@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test"
 
+import bun from "bun"
+
 import { getContext, messageChain } from "#chain.ts"
 import { err, errWithCtx } from "#err.ts"
 
@@ -30,7 +32,7 @@ describe("err", () => {
     const error = err("x", undefined, { a: 1 })
 
     expect(JSON.stringify(error)).toBe('{"context":{"a":1}}')
-    expect(Bun.inspect(error)).toContain("context")
+    expect(bun.inspect(error)).toContain("context")
   })
 
   it("hides the marker", () => {

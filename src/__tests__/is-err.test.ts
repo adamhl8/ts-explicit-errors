@@ -178,7 +178,7 @@ describe("isErr", () => {
   it("works on a runtime without Error.isError", async () => {
     // Run in a subprocess so deleting `Error.isError` doesn't leak into this test process.
     // Print strings because `console.log` colors booleans when `FORCE_COLOR` is set.
-    const script = `delete Error.isError; const { isErr } = await import("${import.meta.dir}/../result.ts"); console.log(String(isErr(new Error("x"))), String(isErr(1)))`
+    const script = `delete Error.isError; const { isErr } = await import("${import.meta.resolve("#result.ts")}"); console.log(String(isErr(new Error("x"))), String(isErr(1)))`
     const output = await $`bun -e ${script}`.quiet().text()
 
     expect(output.trim()).toBe("true false")

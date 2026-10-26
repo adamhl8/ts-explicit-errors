@@ -1,8 +1,8 @@
 [test]
-pathIgnorePatterns = ["fixtures/**", "fixture/**"]
+pathIgnorePatterns = ["**/fixtures/**", "**/fixture/**"]
 coverage = true
 coverageSkipTestFiles = true
-coveragePathIgnorePatterns = ["src/__tests__/**"]
+coveragePathIgnorePatterns = ["**/__tests__/**"]
 concurrentTestGlob = "**/*.test.ts"
 onlyFailures = true
 

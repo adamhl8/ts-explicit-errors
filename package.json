@@ -41,8 +41,8 @@
     "prepare": "bask prepare"
   },
   "devDependencies": {
-    "@adamhl8/bask": "^0.5.0",
-    "@adamhl8/configs": "^3.1.1",
+    "@adamhl8/bask": "^0.6.0",
+    "@adamhl8/configs": "^3.4.1",
     "@arethetypeswrong/core": "^0.18.5",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
