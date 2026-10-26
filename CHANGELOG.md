@@ -1,3 +1,15 @@
+## [5.0.0](https://github.com/adamhl8/ts-explicit-errors/compare/v4.1.3..v5.0.0) - 2026-10-26
+
+### 🚀 Features
+
+- [**breaking**] replace CtxError with plain Error ([34626c9](https://github.com/adamhl8/ts-explicit-errors/commit/34626c973fcc5747652a05d7eee467f7c27cd9f6) by @adamhl8)
+
+### ⚙️ Miscellaneous Tasks
+
+- _(deps)_ update dependencies ([91df05c](https://github.com/adamhl8/ts-explicit-errors/commit/91df05cc9f6c0afb0c0c695cdd6a5b7290a73b8c) by @adamhl8)
+
+- _(tsdown)_ remove failOnWarn override ([696bb1d](https://github.com/adamhl8/ts-explicit-errors/commit/696bb1d260f6b0e5a5809f39cffbe25b08471bbe) by @adamhl8)
+
 ## [4.1.3](https://github.com/adamhl8/ts-explicit-errors/compare/v4.1.2..v4.1.3) - 2026-07-13
 
 ### ⚙️ Miscellaneous Tasks
